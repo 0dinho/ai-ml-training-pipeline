@@ -109,7 +109,7 @@ col_info = pd.DataFrame({
     "Non-Null Count": [int(df[c].notna().sum()) for c in df.columns],
     "Unique Values": [int(df[c].nunique()) for c in df.columns],
 })
-st.dataframe(col_info, use_container_width=True, hide_index=True)
+st.dataframe(col_info, width='stretch', hide_index=True)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 3: Data Preview with Pagination
@@ -122,7 +122,7 @@ page = st.number_input("Page", min_value=1, max_value=total_pages, value=1, step
 start = (page - 1) * PAGE_SIZE
 end = min(start + PAGE_SIZE, len(df))
 st.caption(f"Showing rows {start + 1}–{end} of {len(df)}")
-st.dataframe(df.iloc[start:end], use_container_width=True)
+st.dataframe(df.iloc[start:end], width='stretch')
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 4: EDA Report
@@ -148,7 +148,7 @@ with tab_dist:
                     color_discrete_sequence=[COLORWAY[i % len(COLORWAY)]],
                 )
                 fig.update_layout(**PLOTLY_LAYOUT, title=col_name)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
     if categorical_cols:
         st.subheader("Categorical Distributions")
@@ -162,7 +162,7 @@ with tab_dist:
                     color_discrete_sequence=[COLORWAY[i % len(COLORWAY)]],
                 )
                 fig.update_layout(**PLOTLY_LAYOUT, title=col_name)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
     if not numerical_cols and not categorical_cols:
         st.info("No numerical or categorical columns to plot.")
@@ -181,7 +181,7 @@ with tab_missing:
             color_discrete_sequence=[COLORWAY[0]],
         )
         fig.update_layout(**PLOTLY_LAYOUT, title="Missing Values by Column (%)")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
         # Heatmap of missing pattern (sample to 100 rows for performance)
         st.subheader("Missing Pattern Heatmap")
@@ -195,7 +195,7 @@ with tab_missing:
             aspect="auto",
         )
         fig.update_layout(**PLOTLY_LAYOUT, title="Missing Data Pattern (sample)")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
 # ── Correlations ──────────────────────────────────────────────────────────────
 with tab_corr:
@@ -218,7 +218,7 @@ with tab_corr:
             title="Correlation Matrix",
             height=max(400, 60 * len(corr_matrix)),
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width='stretch')
 
 # ── Target Analysis ───────────────────────────────────────────────────────────
 with tab_target:
@@ -237,14 +237,14 @@ with tab_target:
                     color_discrete_sequence=COLORWAY,
                 )
                 fig.update_layout(**PLOTLY_LAYOUT, title="Class Distribution")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             with c2:
                 fig = px.pie(
                     balance_df, names="class", values="count",
                     color_discrete_sequence=COLORWAY,
                 )
                 fig.update_layout(**PLOTLY_LAYOUT, title="Class Proportions")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
         else:
             c1, c2 = st.columns(2)
             with c1:
@@ -252,13 +252,13 @@ with tab_target:
                     df, x=target, color_discrete_sequence=[COLORWAY[1]],
                 )
                 fig.update_layout(**PLOTLY_LAYOUT, title=f"Distribution of {target}")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             with c2:
                 fig = px.box(
                     df, y=target, color_discrete_sequence=[COLORWAY[2]],
                 )
                 fig.update_layout(**PLOTLY_LAYOUT, title=f"Box Plot of {target}")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
