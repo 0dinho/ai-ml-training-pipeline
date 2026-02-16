@@ -19,17 +19,17 @@ Progress tracker for the MLOps AutoML Platform. Each phase builds on the previou
 ## Phase 2 — Dataset Upload & Exploration (Streamlit Page 1)
 > Let users upload data and understand it before modeling.
 
-- [ ] File uploader supporting CSV, Excel, JSON
-- [ ] Auto-detect column types (numerical, categorical, datetime, text)
-- [ ] Data preview table with pagination
-- [ ] Auto-generate EDA report:
-  - [ ] Distribution plots for numerical columns
-  - [ ] Missing values heatmap
-  - [ ] Correlation matrix
-  - [ ] Class balance chart for the target column
-- [ ] Target column selector
-- [ ] Task type selector (classification / regression)
-- [ ] Store dataset and metadata in session state
+- [x] File uploader supporting CSV, Excel, JSON
+- [x] Auto-detect column types (numerical, categorical, datetime, text)
+- [x] Data preview table with pagination
+- [x] Auto-generate EDA report:
+  - [x] Distribution plots for numerical columns
+  - [x] Missing values heatmap
+  - [x] Correlation matrix
+  - [x] Class balance chart for the target column
+- [x] Target column selector
+- [x] Task type selector (classification / regression)
+- [x] Store dataset and metadata in session state
 
 ---
 
