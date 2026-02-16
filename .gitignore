@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments (not used — project uses Conda + Docker)
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment variables
+.env
+.env.local
+
+# Data (tracked by DVC)
+data/raw/*
+data/processed/*
+data/predictions/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/predictions/.gitkeep
+
+# Artifacts
+artifacts/*
+!artifacts/.gitkeep
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Docker
+*.log
+
+# DVC local cache
+.dvc/cache/
+.dvc/tmp/

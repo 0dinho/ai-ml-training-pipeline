@@ -1,0 +1,26 @@
+app:
+  name: "MLOps AutoML Platform"
+  version: "0.1.0"
+
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  experiment_name: "automl-experiments"
+  registry_name: "automl-model"
+
+api:
+  host: "0.0.0.0"
+  port: 8000
+
+training:
+  default_cv_folds: 5
+  default_test_size: 0.2
+  default_val_size: 0.1
+  random_state: 42
+
+optuna:
+  n_trials: 50
+  timeout: 300  # seconds
+
+monitoring:
+  drift_threshold: 0.05
+  check_interval: 3600  # seconds
