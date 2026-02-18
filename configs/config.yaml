@@ -21,6 +21,22 @@ optuna:
   n_trials: 50
   timeout: 300  # seconds
 
+preprocessing:
+  numerical:
+    imputation: "median"        # mean, median, mode, constant, drop
+    scaling: "standard"         # standard, minmax, robust, none
+  categorical:
+    imputation: "mode"          # mode, constant, drop
+    encoding: "onehot"          # onehot, label, ordinal, target
+  datetime:
+    action: "drop"              # drop, extract
+  text:
+    action: "drop"              # drop
+  split:
+    test_size: 0.2
+    val_size: 0.1
+    random_state: 42
+
 monitoring:
   drift_threshold: 0.05
   check_interval: 3600  # seconds

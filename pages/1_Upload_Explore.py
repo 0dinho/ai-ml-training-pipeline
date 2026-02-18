@@ -291,8 +291,11 @@ task_type = st.radio(
 if st.button("Confirm Configuration", type="primary"):
     st.session_state["target_column"] = target_col
     st.session_state["task_type"] = task_type
-    st.success(
-        f"**Target:** `{target_col}` | **Task:** `{task_type}`  \n"
-        f"Head to the **Preprocessing** page to continue."
-    )
     st.rerun()
+
+if st.session_state.get("target_column") and st.session_state.get("task_type"):
+    st.success(
+        f"**Target:** `{st.session_state['target_column']}` | "
+        f"**Task:** `{st.session_state['task_type']}`"
+    )
+    st.page_link("pages/2_Preprocessing.py", label="Continue to Preprocessing →")

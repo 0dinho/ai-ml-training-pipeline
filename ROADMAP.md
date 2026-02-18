@@ -36,15 +36,15 @@ Progress tracker for the MLOps AutoML Platform. Each phase builds on the previou
 ## Phase 3 — Data Preprocessing Pipeline (Streamlit Page 2)
 > Configurable preprocessing with smart defaults.
 
-- [ ] Per-column configuration UI:
-  - [ ] Imputation strategy (mean, median, mode, drop, constant)
-  - [ ] Encoding method (one-hot, label, ordinal, target encoding)
-  - [ ] Scaling method (standard, min-max, robust, none)
-- [ ] "Auto Preprocess" button with smart defaults
-- [ ] Before/after data preview
-- [ ] Train/validation/test split ratio configuration
-- [ ] Build and persist sklearn preprocessing pipeline
-- [ ] Version processed dataset with DVC
+- [x] Per-column configuration UI:
+  - [x] Imputation strategy (mean, median, mode, drop, constant)
+  - [x] Encoding method (one-hot, label, ordinal, target encoding)
+  - [x] Scaling method (standard, min-max, robust, none)
+- [x] "Auto Preprocess" button with smart defaults
+- [x] Before/after data preview
+- [x] Train/validation/test split ratio configuration
+- [x] Build and persist sklearn preprocessing pipeline
+- [x] Version processed dataset with DVC
 
 ---
 
