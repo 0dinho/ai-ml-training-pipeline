@@ -51,13 +51,13 @@ Progress tracker for the MLOps AutoML Platform. Each phase builds on the previou
 ## Phase 4 — Model Training (Streamlit Page 3)
 > Train multiple algorithms with optional auto-tuning.
 
-- [ ] Model selection: Random Forest, XGBoost, Neural Network
-- [ ] Per-model hyperparameter controls (sliders, inputs)
-- [ ] "Auto Tune with Optuna" toggle per model
-- [ ] Cross-validation with configurable folds
-- [ ] Live training progress bar and log output in the UI
-- [ ] Automatic MLflow experiment logging (params, metrics, artifacts)
-- [ ] Support training multiple models in one session
+- [x] Model selection: Random Forest, XGBoost, Neural Network
+- [x] Per-model hyperparameter controls (sliders, inputs)
+- [x] "Auto Tune with Optuna" toggle per model
+- [x] Cross-validation with configurable folds
+- [x] Live training progress bar and log output in the UI
+- [x] Automatic MLflow experiment logging (params, metrics, artifacts)
+- [x] Support training multiple models in one session
 
 ---
 

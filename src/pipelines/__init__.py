@@ -11,7 +11,24 @@ from src.pipelines.preprocessing import (
     version_with_dvc,
 )
 
+from src.pipelines.training import (
+    TrainingResult,
+    TorchEstimator,
+    compute_metrics,
+    create_sklearn_model,
+    get_default_params,
+    get_search_space,
+    get_training_summary,
+    load_model,
+    log_to_mlflow,
+    run_cross_validation,
+    run_optuna_tuning,
+    save_model,
+    train_model,
+)
+
 __all__ = [
+    # Preprocessing
     "build_preprocessing_pipeline",
     "drop_rows_with_missing",
     "extract_datetime_features",
@@ -22,4 +39,18 @@ __all__ = [
     "save_processed_data",
     "split_data",
     "version_with_dvc",
+    # Training
+    "TrainingResult",
+    "TorchEstimator",
+    "compute_metrics",
+    "create_sklearn_model",
+    "get_default_params",
+    "get_search_space",
+    "get_training_summary",
+    "load_model",
+    "log_to_mlflow",
+    "run_cross_validation",
+    "run_optuna_tuning",
+    "save_model",
+    "train_model",
 ]
