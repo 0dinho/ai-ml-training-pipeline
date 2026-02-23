@@ -64,17 +64,17 @@ Progress tracker for the MLOps AutoML Platform. Each phase builds on the previou
 ## Phase 5 — Results & Metrics Dashboard (Streamlit Page 4)
 > Compare models and promote the best one.
 
-- [ ] Metrics summary table (side-by-side comparison)
-  - [ ] Classification: accuracy, precision, recall, F1, AUC-ROC
-  - [ ] Regression: MSE, RMSE, MAE, R²
-- [ ] Visualizations:
-  - [ ] Confusion matrix
-  - [ ] ROC curve
-  - [ ] Feature importance chart
-  - [ ] Learning curves
-  - [ ] Residual plots (regression)
-- [ ] MLflow experiment history table (sortable, filterable)
-- [ ] One-click "Promote to Registry" button for the best model
+- [x] Metrics summary table (side-by-side comparison)
+  - [x] Classification: accuracy, precision, recall, F1, AUC-ROC
+  - [x] Regression: MSE, RMSE, MAE, R²
+- [x] Visualizations:
+  - [x] Confusion matrix
+  - [x] ROC curve
+  - [x] Feature importance chart
+  - [x] Learning curves
+  - [x] Residual plots (regression)
+- [x] MLflow experiment history table (sortable, filterable)
+- [x] One-click "Promote to Registry" button for the best model
 
 ---
 
