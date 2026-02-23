@@ -81,11 +81,11 @@ Progress tracker for the MLOps AutoML Platform. Each phase builds on the previou
 ## Phase 6 — Prediction & Inference (Streamlit Page 5)
 > Use the trained model on new data.
 
-- [ ] Batch prediction: upload a new CSV
-- [ ] Single prediction: manual row input form (auto-generated from training schema)
-- [ ] Display predictions with confidence scores / probabilities
-- [ ] Download predictions as CSV
-- [ ] Load model from MLflow registry
+- [x] Batch prediction: upload a new CSV
+- [x] Single prediction: manual row input form (auto-generated from training schema)
+- [x] Display predictions with confidence scores / probabilities
+- [x] Download predictions as CSV
+- [x] Load model from MLflow registry
 
 ---
 
