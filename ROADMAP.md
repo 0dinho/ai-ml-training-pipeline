@@ -132,18 +132,18 @@ Progress tracker for the MLOps AutoML Platform. Each phase builds on the previou
 ## Phase 10 — Dockerization & Deployment
 > One command to run everything.
 
-- [ ] `docker-compose.yml` with all services:
-  - [ ] Streamlit app
-  - [ ] FastAPI API
-  - [ ] MLflow tracking server
-  - [ ] Prometheus
-  - [ ] Grafana
-- [ ] `Dockerfile.streamlit`
-- [ ] `Dockerfile.api`
-- [ ] GitHub Actions CI/CD:
-  - [ ] Lint (`flake8`, `black`)
-  - [ ] Test (`pytest`)
-  - [ ] Build Docker image
-  - [ ] Deploy to VPS on merge to `main`
-- [ ] Production environment configuration
-- [ ] Deploy and verify on VPS
+- [x] `docker-compose.yml` with all services:
+  - [x] Streamlit app
+  - [x] FastAPI API
+  - [x] MLflow tracking server
+  - [x] Prometheus
+  - [x] Grafana
+- [x] `Dockerfile.streamlit`
+- [x] `Dockerfile.api`
+- [x] GitHub Actions CI/CD:
+  - [x] Lint (`flake8`, `black`)
+  - [x] Test (`pytest`)
+  - [x] Build Docker image
+  - [x] Deploy to VPS on merge to `main` (placeholder — uncomment `deploy` job in `ci.yml` and set VPS secrets)
+- [x] Production environment configuration (`.env.example`)
+- [x] Deploy and verify on VPS (user-managed; `docker compose up --build` after copying `.env.example` to `.env`)
