@@ -28,6 +28,11 @@ from src.pipelines.training import (
     train_model,
 )
 
+from src.pipelines.retraining import (
+    RetrainingResult,
+    run_retraining,
+)
+
 __all__ = [
     # Preprocessing
     "build_preprocessing_pipeline",
@@ -55,4 +60,7 @@ __all__ = [
     "run_optuna_tuning",
     "save_model",
     "train_model",
+    # Retraining
+    "RetrainingResult",
+    "run_retraining",
 ]

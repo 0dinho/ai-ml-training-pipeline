@@ -121,11 +121,11 @@ Progress tracker for the MLOps AutoML Platform. Each phase builds on the previou
 ## Phase 9 — Automated Retraining
 > Close the loop: detect drift, retrain, redeploy.
 
-- [ ] "Retrain Now" button in the UI (triggered when drift is detected)
-- [ ] Scheduled retraining via background job (APScheduler or cron)
-- [ ] New experiment auto-logged to MLflow
-- [ ] Auto-compare new model vs. current production model
-- [ ] Optional auto-promotion if new model performs better
+- [x] "Retrain Now" button in the UI (triggered when drift is detected)
+- [x] Scheduled retraining via background job (APScheduler or cron)
+- [x] New experiment auto-logged to MLflow
+- [x] Auto-compare new model vs. current production model
+- [x] Optional auto-promotion if new model performs better
 
 ---
 

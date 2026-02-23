@@ -405,6 +405,191 @@ if "drift_results" in st.session_state:
                 st.plotly_chart(fig, use_container_width=True)
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Section 4 — Automated Retraining
+# ══════════════════════════════════════════════════════════════════════════════
+st.divider()
+st.header("4 — Automated Retraining")
+
+import json  # noqa: E402 (deferred to avoid top-level import cost)
+import os    # noqa: E402
+from src.pipelines.retraining import MODEL_DISPLAY_NAMES, run_retraining  # noqa: E402
+
+# ── Scheduler status banner ────────────────────────────────────────────────
+STATUS_FILE = "artifacts/scheduler_status.json"
+if os.path.exists(STATUS_FILE):
+    try:
+        with open(STATUS_FILE) as _sf:
+            _sched = json.load(_sf)
+        _sched_status = _sched.get("status", "unknown")
+        _sched_color = {
+            "idle": "✅", "running": "⏳", "error": "🔴",
+            "stopped": "⛔", "starting": "🔄",
+        }.get(_sched_status, "ℹ️")
+        _sched_cols = st.columns([2, 2, 2, 4])
+        _sched_cols[0].metric("Scheduler", f"{_sched_color} {_sched_status.upper()}")
+        _sched_cols[1].metric(
+            "Schedule",
+            f"Every {_sched.get('interval_hours', '?')}h"
+            if _sched.get("schedule") == "interval"
+            else (_sched.get("cron") or "—"),
+        )
+        _sched_cols[2].metric("Auto-promote", "Yes" if _sched.get("auto_promote") else "No")
+        _sched_cols[3].caption(f"Updated: {_sched.get('updated_at', '—')}")
+        if _sched_status == "error" and _sched.get("error"):
+            st.error(f"Scheduler error: {_sched['error']}")
+    except Exception:
+        st.info("Scheduler status file could not be read.")
+else:
+    st.info(
+        "No scheduler is currently running. "
+        "Start `python retraining_scheduler.py` to enable scheduled retraining."
+    )
+
+st.caption(
+    "Trigger a manual retraining cycle below, or configure the scheduler for "
+    "fully automated retraining whenever drift is detected."
+)
+
+# ── Drift alert ────────────────────────────────────────────────────────────
+_drift = st.session_state.get("drift_results")
+if _drift:
+    _summary = drift_summary(_drift)
+    if _summary["drift_rate"] > 0:
+        st.warning(
+            f"⚠️  Drift detected in **{_summary['drifted_columns']}** of "
+            f"{_summary['tested_columns']} columns "
+            f"({_summary['drift_rate']:.0%} drift rate). "
+            "Consider retraining."
+        )
+    else:
+        st.success("No significant drift detected in the latest comparison.")
+
+# ── Retraining controls ────────────────────────────────────────────────────
+_model_options = {v: k for k, v in MODEL_DISPLAY_NAMES.items()}
+_task_type_default = st.session_state.get("task_type", "classification")
+
+with st.form("retrain_form"):
+    _rc1, _rc2 = st.columns(2)
+    with _rc1:
+        _selected_model_name = st.selectbox(
+            "Model to retrain",
+            options=list(_model_options.keys()),
+            help="Select the algorithm to retrain from scratch.",
+        )
+        _task_type = st.selectbox(
+            "Task type",
+            ["classification", "regression"],
+            index=0 if _task_type_default == "classification" else 1,
+        )
+    with _rc2:
+        _cv_folds = st.slider("Cross-validation folds", 2, 10, 5)
+        _auto_promote = st.toggle(
+            "Auto-promote if improved",
+            value=False,
+            help="Register the new model in the MLflow Model Registry "
+                 "if it outperforms the current one.",
+        )
+        _registry_name = st.text_input(
+            "Registry model name",
+            value="automl-model",
+            disabled=not _auto_promote,
+        )
+
+    _submitted = st.form_submit_button(
+        "🔄 Retrain Now",
+        type="primary",
+        use_container_width=True,
+    )
+
+if _submitted:
+    _model_type = _model_options[_selected_model_name]
+    _log_lines: list[str] = []
+    _log_box = st.empty()
+
+    def _ui_log(msg: str) -> None:
+        _log_lines.append(msg)
+        _log_box.code("\n".join(_log_lines[-30:]))  # keep last 30 lines
+
+    with st.spinner(f"Retraining {_selected_model_name}…"):
+        try:
+            _retrain_result = run_retraining(
+                model_type=_model_type,
+                task_type=_task_type,
+                cv_folds=_cv_folds,
+                registry_name=_registry_name if _auto_promote else None,
+                auto_promote=_auto_promote,
+                log_callback=_ui_log,
+            )
+            # Persist in session history
+            if "retraining_history" not in st.session_state:
+                st.session_state["retraining_history"] = []
+            st.session_state["retraining_history"].append(_retrain_result.as_dict())
+            st.session_state["last_retraining"] = _retrain_result
+        except Exception as _exc:
+            st.error(f"Retraining failed: {_exc}")
+            _retrain_result = None
+
+    if _retrain_result is not None:
+        _pk = _retrain_result.primary_metric
+        _new_score = _retrain_result.new_test_metrics.get(_pk, 0.0)
+        _old_score = (
+            _retrain_result.old_test_metrics.get(_pk, 0.0)
+            if _retrain_result.old_test_metrics else None
+        )
+        if _retrain_result.improved:
+            st.success(
+                f"✅ Retraining complete — **{_pk}** improved from "
+                f"{f'{_old_score:.4f}' if _old_score is not None else 'N/A'} "
+                f"→ **{_new_score:.4f}** (Δ {_retrain_result.metric_delta:+.4f})"
+                + (" — model promoted to registry." if _retrain_result.promoted else ".")
+            )
+        else:
+            st.warning(
+                f"Retraining finished but no improvement — "
+                f"{_pk}: new={_new_score:.4f}, "
+                f"old={f'{_old_score:.4f}' if _old_score is not None else 'N/A'} "
+                f"(Δ {_retrain_result.metric_delta:+.4f}). Existing model kept."
+            )
+
+        # Metric comparison cards
+        _m1, _m2, _m3 = st.columns(3)
+        _m1.metric(
+            f"New {_pk} (test)",
+            f"{_new_score:.4f}",
+            delta=f"{_retrain_result.metric_delta:+.4f}" if _old_score is not None else None,
+        )
+        _m2.metric(
+            f"Previous {_pk}",
+            f"{_old_score:.4f}" if _old_score is not None else "—",
+        )
+        _m3.metric("Promoted", "Yes" if _retrain_result.promoted else "No")
+
+        if _retrain_result.mlflow_run_id:
+            st.caption(f"MLflow run: `{_retrain_result.mlflow_run_id}`")
+        if _retrain_result.artifact_path:
+            st.caption(f"Artifact: `{_retrain_result.artifact_path}`")
+        if _retrain_result.promotion_error:
+            st.error(f"Promotion error: {_retrain_result.promotion_error}")
+
+# ── Retraining history table ───────────────────────────────────────────────
+_history = st.session_state.get("retraining_history", [])
+if _history:
+    st.subheader("Retraining History")
+    _hist_df = pd.DataFrame(list(reversed(_history)))
+    st.dataframe(
+        _hist_df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "improved": st.column_config.CheckboxColumn("Improved"),
+            "promoted": st.column_config.CheckboxColumn("Promoted"),
+            "new_score": st.column_config.NumberColumn("New Score", format="%.4f"),
+            "old_score": st.column_config.NumberColumn("Old Score", format="%.4f"),
+            "delta": st.column_config.NumberColumn("Δ", format="%+.4f"),
+        },
+    )
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Navigation
 # ══════════════════════════════════════════════════════════════════════════════
 st.divider()
