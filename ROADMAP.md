@@ -92,13 +92,13 @@ Progress tracker for the MLOps AutoML Platform. Each phase builds on the previou
 ## Phase 7 — Model Serving API
 > Production-ready API for real-time inference.
 
-- [ ] FastAPI app with `/predict` endpoint
-- [ ] `/predict/batch` endpoint for multiple rows
-- [ ] `/health` health check endpoint
-- [ ] Pydantic input validation (schema auto-generated from training columns)
-- [ ] Load active model from MLflow Model Registry
-- [ ] Prometheus metrics instrumentation (request count, latency, prediction distribution)
-- [ ] Dockerfile for the API service
+- [x] FastAPI app with `/predict` endpoint
+- [x] `/predict/batch` endpoint for multiple rows
+- [x] `/health` health check endpoint
+- [x] Pydantic input validation (schema auto-generated from training columns)
+- [x] Load active model from MLflow Model Registry
+- [x] Prometheus metrics instrumentation (request count, latency, prediction distribution)
+- [x] Dockerfile for the API service
 
 ---
 

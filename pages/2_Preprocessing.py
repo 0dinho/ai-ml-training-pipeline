@@ -11,6 +11,7 @@ from src.pipelines.preprocessing import (
     get_preprocessing_summary,
     save_pipeline,
     save_processed_data,
+    save_schema,
     split_data,
     version_with_dvc,
 )
@@ -247,6 +248,16 @@ if st.button("🚀 Run Preprocessing Pipeline", type="primary", disabled=not con
 
             # --- Step 6: Save pipeline ---
             pipeline_path = save_pipeline(pipeline)
+
+            # --- Step 6b: Save schema for the inference API ---
+            save_schema(
+                feature_columns=[c for c in df.columns if c != target_column],
+                column_types=column_types,
+                column_config=active_config,
+                task_type=task_type,
+                target_column=target_column,
+                feature_names=feature_names,
+            )
 
             # --- Step 7: Save processed data ---
             data_paths = save_processed_data(

@@ -7,6 +7,7 @@ from src.pipelines.preprocessing import (
     get_preprocessing_summary,
     save_pipeline,
     save_processed_data,
+    save_schema,
     split_data,
     version_with_dvc,
 )
@@ -37,6 +38,7 @@ __all__ = [
     "get_preprocessing_summary",
     "save_pipeline",
     "save_processed_data",
+    "save_schema",
     "split_data",
     "version_with_dvc",
     # Training

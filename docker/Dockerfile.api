@@ -1,0 +1,29 @@
+# ── Stage: runtime ────────────────────────────────────────────────────────────
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application source
+COPY src/    src/
+COPY api/    api/
+COPY configs/ configs/
+
+# Artifacts are mounted at runtime (preprocessing_pipeline.joblib, schema.json, *_model.joblib)
+# To bake them into the image instead, uncomment the next line:
+# COPY artifacts/ artifacts/
+
+EXPOSE 8000
+
+# PYTHONPATH so 'from src.pipelines...' and 'from api...' resolve correctly
+ENV PYTHONPATH=/app
+
+# Two Uvicorn workers by default; override with --workers or WEB_CONCURRENCY env var
+CMD ["uvicorn", "api.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--workers", "2", \
+     "--log-level", "info"]

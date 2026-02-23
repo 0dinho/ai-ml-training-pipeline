@@ -347,6 +347,54 @@ def save_processed_data(
 
 
 # ---------------------------------------------------------------------------
+# Schema persistence (consumed by the inference API)
+# ---------------------------------------------------------------------------
+
+def save_schema(
+    feature_columns: list[str],
+    column_types: dict[str, str],
+    column_config: dict[str, dict],
+    task_type: str,
+    target_column: str,
+    feature_names: list[str],
+    artifact_dir: str = "artifacts",
+) -> str:
+    """Save the training schema to JSON so the inference API can validate inputs.
+
+    The file is written to *artifact_dir*/schema.json and contains:
+      - feature_columns: original feature column names (before preprocessing)
+      - column_types:    detected type per column
+      - column_config:   per-column preprocessing config
+      - datetime_extract_cols: columns whose datetime features were extracted
+      - task_type / target_column: task metadata
+      - feature_names: post-transformation feature names
+    """
+    import json
+
+    datetime_extract_cols = [
+        col for col, cfg in column_config.items()
+        if cfg.get("type") == "datetime" and cfg.get("action") == "extract"
+        and col in feature_columns
+    ]
+
+    schema: dict = {
+        "feature_columns": feature_columns,
+        "column_types": {k: v for k, v in column_types.items() if k in feature_columns},
+        "column_config": {k: v for k, v in column_config.items() if k in feature_columns},
+        "datetime_extract_cols": datetime_extract_cols,
+        "task_type": task_type,
+        "target_column": target_column,
+        "feature_names": feature_names,
+    }
+
+    os.makedirs(artifact_dir, exist_ok=True)
+    path = os.path.join(artifact_dir, "schema.json")
+    with open(path, "w") as f:
+        json.dump(schema, f, indent=2)
+    return path
+
+
+# ---------------------------------------------------------------------------
 # DVC versioning (best-effort)
 # ---------------------------------------------------------------------------
 
