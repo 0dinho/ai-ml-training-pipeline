@@ -105,16 +105,16 @@ Progress tracker for the MLOps AutoML Platform. Each phase builds on the previou
 ## Phase 8 — Monitoring & Drift Detection (Streamlit Page 6)
 > Track model health and detect when retraining is needed.
 
-- [ ] Prometheus metrics collection:
-  - [ ] Request count
-  - [ ] Prediction latency (p50, p95, p99)
-  - [ ] Prediction distribution over time
-- [ ] Data drift detection:
-  - [ ] Compare new data distributions to training data
-  - [ ] Statistical tests (KS test, PSI, chi-squared)
-  - [ ] Drift alerts displayed in UI
-- [ ] Grafana dashboard with pre-built panels
-- [ ] Native Streamlit monitoring page as fallback
+- [x] Prometheus metrics collection:
+  - [x] Request count
+  - [x] Prediction latency (p50, p95, p99)
+  - [x] Prediction distribution over time
+- [x] Data drift detection:
+  - [x] Compare new data distributions to training data
+  - [x] Statistical tests (KS test, PSI, chi-squared)
+  - [x] Drift alerts displayed in UI
+- [x] Grafana dashboard with pre-built panels
+- [x] Native Streamlit monitoring page as fallback
 
 ---
 
