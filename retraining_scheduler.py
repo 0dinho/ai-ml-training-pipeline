@@ -22,7 +22,7 @@ RETRAIN_AUTO_PROMOTE    Whether to auto-promote if improved: true | false
 RETRAIN_REGISTRY_NAME   MLflow registry model name (required for auto-promote)
                         Default: automl-model
 MLFLOW_TRACKING_URI     MLflow server URI
-                        Default: http://localhost:5000
+                        Default: http://localhost:5001
 MLFLOW_EXPERIMENT       MLflow experiment name
                         Default: automl-experiments
 DATA_DIR                Directory containing processed CSV splits
@@ -66,7 +66,7 @@ CRON_EXPR: str = os.environ.get("RETRAIN_CRON", "0 2 * * *")
 CV_FOLDS: int = int(os.environ.get("RETRAIN_CV_FOLDS", "5"))
 AUTO_PROMOTE: bool = os.environ.get("RETRAIN_AUTO_PROMOTE", "false").lower() == "true"
 REGISTRY_NAME: str = os.environ.get("RETRAIN_REGISTRY_NAME", "automl-model")
-MLFLOW_URI: str = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
+MLFLOW_URI: str = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5001")
 MLFLOW_EXPERIMENT: str = os.environ.get("MLFLOW_EXPERIMENT", "automl-experiments")
 DATA_DIR: str = os.environ.get("DATA_DIR", "data/processed")
 ARTIFACT_DIR: str = os.environ.get("ARTIFACT_DIR", "artifacts")

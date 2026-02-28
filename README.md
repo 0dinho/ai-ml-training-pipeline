@@ -142,7 +142,7 @@ dvc init
 ### 5. Start MLflow tracking server
 
 ```bash
-mlflow server --host 0.0.0.0 --port 5000 &
+mlflow server --host 0.0.0.0 --port 5001 &
 ```
 
 ### 6. Run the Streamlit app
@@ -168,7 +168,7 @@ This starts:
 | Streamlit App | http://localhost:8501 |
 | FastAPI | http://localhost:8000 |
 | FastAPI Docs | http://localhost:8000/docs |
-| MLflow UI | http://localhost:5000 |
+| MLflow UI | http://localhost:5001 |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 |
 
@@ -215,7 +215,7 @@ GitHub Actions workflows handle:
 
 | Variable | Description | Default |
 |---|---|---|
-| `MLFLOW_TRACKING_URI` | MLflow server URL | `http://localhost:5000` |
+| `MLFLOW_TRACKING_URI` | MLflow server URL | `http://localhost:5001` |
 | `MODEL_REGISTRY_NAME` | MLflow registered model name | `automl-model` |
 | `API_HOST` | FastAPI host | `0.0.0.0` |
 | `API_PORT` | FastAPI port | `8000` |

@@ -584,7 +584,7 @@ def train_model(
 def log_to_mlflow(
     result: TrainingResult,
     experiment_name: str = "automl-experiments",
-    tracking_uri: str = "http://localhost:5000",
+    tracking_uri: str = "http://localhost:5001",
 ) -> str | None:
     """Best-effort MLflow logging. Returns run_id or None on failure."""
     try:

@@ -17,7 +17,7 @@ PLOTLY_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
 )
-MLFLOW_URI = "http://localhost:5000"
+MLFLOW_URI = "http://localhost:5001"
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
@@ -157,7 +157,7 @@ else:  # MLflow Registry
 
     if registry_models is None:
         st.warning(
-            "MLflow server not reachable at `http://localhost:5000`. "
+            "MLflow server not reachable at `http://localhost:5001`. "
             "Start it with `mlflow ui`."
         )
         st.stop()

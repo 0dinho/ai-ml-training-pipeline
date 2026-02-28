@@ -18,7 +18,7 @@ PLOTLY_LAYOUT = dict(
     plot_bgcolor="rgba(0,0,0,0)",
 )
 COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7"]
-MLFLOW_URI = "http://localhost:5000"
+MLFLOW_URI = "http://localhost:5001"
 MLFLOW_EXPERIMENT = "automl-experiments"
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
@@ -439,7 +439,7 @@ mlflow_df = _load_mlflow_runs()
 
 if mlflow_df is None:
     st.warning(
-        "MLflow tracking server is not reachable at `http://localhost:5000`. "
+        "MLflow tracking server is not reachable at `http://localhost:5001`. "
         "Start it with `mlflow ui` to view experiment history."
     )
 elif mlflow_df.empty:
@@ -533,7 +533,7 @@ if st.button("🏆 Promote to MLflow Registry", type="primary"):
         except Exception as e:
             st.error(
                 f"Registration failed: {e}\n\n"
-                "Make sure the MLflow server is running: `mlflow ui --port 5000`"
+                "Make sure the MLflow server is running: `mlflow ui --port 5001`"
             )
 
 if "promoted_model" in st.session_state:

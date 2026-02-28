@@ -3,7 +3,7 @@ app:
   version: "0.1.0"
 
 mlflow:
-  tracking_uri: "http://localhost:5000"
+  tracking_uri: "http://localhost:5001"
   experiment_name: "automl-experiments"
   registry_name: "automl-model"
 

@@ -8,7 +8,7 @@ from typing import Any
 import joblib
 
 # ── Environment-variable configuration ────────────────────────────────────────
-MLFLOW_TRACKING_URI: str = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5000")
+MLFLOW_TRACKING_URI: str = os.getenv("MLFLOW_TRACKING_URI", "http://localhost:5001")
 MLFLOW_MODEL_NAME: str = os.getenv("MLFLOW_MODEL_NAME", "")
 MLFLOW_MODEL_STAGE: str = os.getenv("MLFLOW_MODEL_STAGE", "latest")
 

@@ -34,7 +34,7 @@ from src.pipelines.training import (
 # ── Constants ──────────────────────────────────────────────────────────────────
 DATA_DIR: str = "data/processed"
 ARTIFACT_DIR: str = "artifacts"
-MLFLOW_URI: str = "http://localhost:5000"
+MLFLOW_URI: str = "http://localhost:5001"
 MLFLOW_EXPERIMENT: str = "automl-experiments"
 
 

@@ -10,7 +10,7 @@ Start with:
   uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
 
 Environment variables:
-  MLFLOW_TRACKING_URI   — MLflow server URL           (default: http://localhost:5000)
+  MLFLOW_TRACKING_URI   — MLflow server URL           (default: http://localhost:5001)
   MLFLOW_MODEL_NAME     — Registered model name       (default: "" → use disk)
   MLFLOW_MODEL_STAGE    — Model stage/version         (default: latest)
   PIPELINE_PATH         — Path to preprocessing joblib (default: artifacts/preprocessing_pipeline.joblib)
