@@ -56,3 +56,6 @@ Thumbs.db
 # DVC local cache
 .dvc/cache/
 .dvc/tmp/
+
+# Roadmap
+ROADMAP.md

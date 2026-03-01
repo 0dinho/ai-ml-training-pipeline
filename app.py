@@ -13,6 +13,9 @@ st.markdown(
     An end-to-end machine learning platform — upload data, preprocess, train models,
     compare results, serve predictions, and monitor for drift.
 
+    Supports **6 task types**: Binary Classification, Multiclass Classification,
+    Regression, Clustering, Anomaly Detection, and Dimensionality Reduction.
+
     **Get started** by navigating to a page in the sidebar.
 
     ---
@@ -20,10 +23,11 @@ st.markdown(
     ### Workflow
 
     1. **Upload & Explore** — Load your dataset and review an auto-generated EDA report
-    2. **Preprocessing** — Configure or auto-apply data transformations
-    3. **Training** — Train Random Forest, XGBoost, or Neural Network models
-    4. **Results** — Compare metrics, visualizations, and promote the best model
-    5. **Prediction** — Run batch or single predictions with the registered model
-    6. **Monitoring** — Track model health and detect data drift
+    2. **Preprocessing** — Configure or auto-apply data transformations and splitting
+    3. **Feature Engineering** *(optional)* — Polynomial features, transforms, and binning
+    4. **Training** — Train 20+ models across all supported task types
+    5. **Results** — Compare metrics, visualizations, and promote the best model
+    6. **Prediction** — Run batch or single predictions (cluster labels, anomaly scores, coordinates, or class probabilities)
+    7. **Monitoring** — Track model health, detect data drift, and trigger retraining
     """
 )

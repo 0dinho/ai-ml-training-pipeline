@@ -1,149 +1,224 @@
 # Roadmap
 
-Progress tracker for the MLOps AutoML Platform. Each phase builds on the previous one.
+Progress tracker for the MLOps AutoML Platform (expanded edition).
+Each phase builds on the previous one.
 
 ---
 
 ## Phase 1 — Project Setup
 > Foundation: repository structure, dependencies, and tooling.
 
-- [x] Create project directory structure (`src/`, `pages/`, `components/`, `configs/`, `docker/`, etc.)
+- [x] Create project directory structure
 - [x] Initialize Git repository
 - [x] Initialize DVC
 - [x] Set up virtual environment and `requirements.txt`
 - [x] Plan the app as a multi-page Streamlit app
 - [x] Create README.md and ROADMAP.md
+- [x] **[NEW]** Restructure `src/` to separate supervised vs unsupervised model modules
+- [x] **[NEW]** Add `umap-learn`, `shap`, `scipy`, `scikit-learn >= 1.4` to `requirements.txt`
+- [x] **[NEW]** Update `configs/` with task-type-aware default config files
 
 ---
 
-## Phase 2 — Dataset Upload & Exploration (Streamlit Page 1)
-> Let users upload data and understand it before modeling.
+## Phase 2 — Dataset Upload & Exploration (Page 1)
+> Let users upload data and understand it before choosing a task.
 
 - [x] File uploader supporting CSV, Excel, JSON
 - [x] Auto-detect column types (numerical, categorical, datetime, text)
 - [x] Data preview table with pagination
-- [x] Auto-generate EDA report:
-  - [x] Distribution plots for numerical columns
-  - [x] Missing values heatmap
-  - [x] Correlation matrix
-  - [x] Class balance chart for the target column
+- [x] Auto-generate EDA report (distributions, missing values, correlation, class balance)
 - [x] Target column selector
-- [x] Task type selector (classification / regression)
 - [x] Store dataset and metadata in session state
+- [x] **[NEW]** Expanded task type selector:
+  - [x] Regression
+  - [x] Binary Classification
+  - [x] Multiclass Classification
+  - [x] Clustering
+  - [x] Dimensionality Reduction
+  - [x] Anomaly Detection
+- [x] **[NEW]** Hide target column selector for fully unsupervised tasks (clustering, anomaly detection, dimensionality reduction)
+- [x] **[NEW]** Show task-relevant EDA hints (e.g. class balance for classification, inlier/outlier ratio hint for anomaly detection)
 
 ---
 
-## Phase 3 — Data Preprocessing Pipeline (Streamlit Page 2)
-> Configurable preprocessing with smart defaults.
+## Phase 3 — Data Cleaning & Preprocessing (Page 2)
+> Robust cleaning pipeline before any modeling.
 
-- [x] Per-column configuration UI:
-  - [x] Imputation strategy (mean, median, mode, drop, constant)
-  - [x] Encoding method (one-hot, label, ordinal, target encoding)
-  - [x] Scaling method (standard, min-max, robust, none)
+- [x] Per-column imputation strategy
+- [x] Encoding and scaling controls
 - [x] "Auto Preprocess" button with smart defaults
 - [x] Before/after data preview
-- [x] Train/validation/test split ratio configuration
-- [x] Build and persist sklearn preprocessing pipeline
-- [x] Version processed dataset with DVC
+- [x] Train/validation/test split configuration
+- [x] Persist sklearn pipeline with DVC versioning
+- [x] **[NEW]** Data quality diagnostics panel:
+  - [x] Missing value ratio per column (visual bar chart)
+  - [x] Duplicate row count and preview
+  - [x] Constant / near-constant column detection
+  - [x] Outlier detection summary (IQR / Z-score flagging)
+- [x] **[NEW]** Cleaning actions:
+  - [x] Drop or flag duplicates
+  - [x] Low-variance filter (configurable threshold)
+  - [x] High-correlation filter (drop one of correlated pair above threshold)
+  - [ ] Value range validation (configurable min/max bounds per numerical column)
+  - [ ] Regex-based validation for text/categorical columns
+  - [x] KNN imputation as an additional strategy
+- [x] **[NEW]** Disable train/val/test split UI for fully unsupervised tasks
 
 ---
 
-## Phase 4 — Model Training (Streamlit Page 3)
-> Train multiple algorithms with optional auto-tuning.
+## Phase 4 — Feature Engineering (Page 3) **[NEW PAGE]**
+> Dimensionality reduction and feature transformation as a configurable step.
 
-- [x] Model selection: Random Forest, XGBoost, Neural Network
-- [x] Per-model hyperparameter controls (sliders, inputs)
-- [x] "Auto Tune with Optuna" toggle per model
+- [x] Technique selector:
+  - [x] PCA — Principal Component Analysis
+  - [x] LDA — Linear Discriminant Analysis (supervised tasks only)
+  - [ ] CCA — Canonical Correlation Analysis
+  - [x] NMF — Non-negative Matrix Factorization
+  - [x] t-SNE (visualization only, not fed into training)
+  - [x] UMAP (visualization + optionally fed into training)
+- [x] Configure: number of components or explained variance threshold
+- [x] Explained variance plot (scree plot for PCA)
+- [x] Component loadings / feature contribution table
+- [x] 2D / 3D scatter plot of transformed data (colored by target if supervised)
+- [x] Toggle: "Use as preprocessing step before training" vs. "Run as the main task"
+- [x] Persist transformed dataset and fitted transformer
+
+---
+
+## Phase 5 — Model Training (Page 4)
+> Train the right algorithms for each task type.
+
+- [x] Model selection UI
+- [x] Per-model hyperparameter controls
+- [x] "Auto Tune with Optuna" toggle
 - [x] Cross-validation with configurable folds
-- [x] Live training progress bar and log output in the UI
-- [x] Automatic MLflow experiment logging (params, metrics, artifacts)
-- [x] Support training multiple models in one session
+- [x] Live training progress and logs
+- [x] Automatic MLflow experiment logging
+- [x] Multi-model session support
+- [x] **[NEW]** Supervised — Regression models:
+  - [x] Linear Regression, Ridge, Lasso, ElasticNet
+  - [x] Decision Tree Regressor
+  - [x] Random Forest Regressor
+  - [x] XGBoost Regressor
+  - [x] SVR (Support Vector Regressor)
+  - [x] kNN Regressor
+  - [x] Neural Network Regressor (MLP)
+- [x] **[NEW]** Supervised — Classification models:
+  - [x] Logistic Regression
+  - [x] Naive Bayes (Gaussian, Multinomial, Bernoulli)
+  - [x] SVM / SVC (linear and RBF kernel)
+  - [x] Decision Tree Classifier
+  - [x] Random Forest Classifier
+  - [x] XGBoost Classifier
+  - [x] kNN Classifier
+  - [x] Neural Network Classifier (MLP / Softmax)
+- [x] **[NEW]** Unsupervised — Clustering models:
+  - [x] K-Means (with elbow method + silhouette scan for K)
+  - [ ] Mean Shift
+  - [x] Hierarchical / Agglomerative Clustering (configurable linkage)
+  - [x] DBSCAN (eps and min_samples controls)
+  - [x] Expectation-Maximization / Gaussian Mixture Model
+- [x] **[NEW]** Unsupervised — Anomaly Detection models:
+  - [x] Isolation Forest
+  - [x] One-Class SVM
+  - [ ] Autoencoder (PyTorch, reconstruction error threshold)
+- [x] **[NEW]** Task-aware MLflow tags (`task_type`, `model_family`)
 
 ---
 
-## Phase 5 — Results & Metrics Dashboard (Streamlit Page 4)
-> Compare models and promote the best one.
+## Phase 6 — Results & Metrics Dashboard (Page 5)
+> Evaluate and compare models with task-appropriate metrics and charts.
 
-- [x] Metrics summary table (side-by-side comparison)
-  - [x] Classification: accuracy, precision, recall, F1, AUC-ROC
-  - [x] Regression: MSE, RMSE, MAE, R²
-- [x] Visualizations:
-  - [x] Confusion matrix
-  - [x] ROC curve
-  - [x] Feature importance chart
-  - [x] Learning curves
-  - [x] Residual plots (regression)
-- [x] MLflow experiment history table (sortable, filterable)
-- [x] One-click "Promote to Registry" button for the best model
+- [x] Supervised metrics table (accuracy, F1, RMSE, R², etc.)
+- [x] Confusion matrix, ROC curve, feature importance, learning curves
+- [x] MLflow experiment history
+- [x] One-click "Promote to Registry"
+- [x] **[NEW]** Unified metrics table that adapts to task type
+- [x] **[NEW]** Classification metrics: Accuracy, Precision, Recall, F1, AUC-ROC, Log Loss, MCC
+- [x] **[NEW]** Regression metrics: MSE, RMSE, MAE, R², Adjusted R²
+- [x] **[NEW]** Clustering metrics: Silhouette Score, Davies-Bouldin Index, Calinski-Harabasz Index, Inertia
+- [x] **[NEW]** Anomaly detection metrics: contamination rate, anomaly score distribution, Precision@k
+- [ ] **[NEW]** New visualizations:
+  - [x] Cluster scatter plot with centroid overlays (2D projection if needed)
+  - [x] Dendrogram for Hierarchical Clustering
+  - [x] Elbow / silhouette curve (clustering)
+  - [x] 2D/3D embedding plot (dimensionality reduction as main task)
+  - [x] Anomaly score histogram with decision threshold line
+  - [x] Precision-Recall curve (binary classification)
+  - [x] SHAP summary plot and beeswarm chart (supervised models)
+  - [x] Residual plot and actual-vs-predicted scatter (regression)
 
 ---
 
-## Phase 6 — Prediction & Inference (Streamlit Page 5)
+## Phase 7 — Prediction & Inference (Page 6)
 > Use the trained model on new data.
 
-- [x] Batch prediction: upload a new CSV
-- [x] Single prediction: manual row input form (auto-generated from training schema)
-- [x] Display predictions with confidence scores / probabilities
+- [x] Batch prediction via CSV upload
+- [x] Single-row manual input form
+- [x] Confidence scores
 - [x] Download predictions as CSV
 - [x] Load model from MLflow registry
+- [x] **[NEW]** Task-aware prediction output:
+  - [x] Classification → class label + class probabilities
+  - [x] Regression → predicted value + optional confidence interval
+  - [x] Clustering → cluster ID assignment for new points
+  - [x] Anomaly Detection → anomaly flag + anomaly score per row
+  - [x] Dimensionality Reduction → transformed coordinates
 
 ---
 
-## Phase 7 — Model Serving API
-> Production-ready API for real-time inference.
+## Phase 8 — Model Serving API (FastAPI)
+> Production-ready API with task-aware responses.
 
-- [x] FastAPI app with `/predict` endpoint
-- [x] `/predict/batch` endpoint for multiple rows
-- [x] `/health` health check endpoint
-- [x] Pydantic input validation (schema auto-generated from training columns)
+- [x] `/predict` single-row endpoint
+- [x] `/predict/batch` multi-row endpoint
+- [x] `/health` health check
+- [x] Pydantic validation from training schema
 - [x] Load active model from MLflow Model Registry
-- [x] Prometheus metrics instrumentation (request count, latency, prediction distribution)
-- [x] Dockerfile for the API service
+- [x] Prometheus metrics instrumentation
+- [x] Dockerfile
+- [x] **[NEW]** Task-aware response schema (classification, regression, clustering, anomaly)
+- [x] **[NEW]** `/model/info` endpoint returning active model metadata and task type
+- [ ] **[NEW]** Autoencoder serving: encode input → compute reconstruction error → return anomaly decision
 
 ---
 
-## Phase 8 — Monitoring & Drift Detection (Streamlit Page 6)
-> Track model health and detect when retraining is needed.
+## Phase 9 — Monitoring & Drift Detection (Page 7)
+> Track model health across all task types.
 
-- [x] Prometheus metrics collection:
-  - [x] Request count
-  - [x] Prediction latency (p50, p95, p99)
-  - [x] Prediction distribution over time
-- [x] Data drift detection:
-  - [x] Compare new data distributions to training data
-  - [x] Statistical tests (KS test, PSI, chi-squared)
-  - [x] Drift alerts displayed in UI
-- [x] Grafana dashboard with pre-built panels
-- [x] Native Streamlit monitoring page as fallback
+- [x] Prometheus metrics (request count, latency, prediction distribution)
+- [x] Data drift detection (KS test, PSI, chi-squared)
+- [x] Drift alerts in UI
+- [x] Grafana dashboards
+- [x] **[NEW]** Concept drift monitoring for supervised models (prediction distribution shift over time)
+- [x] **[NEW]** Cluster drift: detect when new data points fall outside existing cluster boundaries
+- [x] **[NEW]** Anomaly rate tracking over time (sudden spike = potential concept drift)
+- [x] **[NEW]** Per-feature drift score breakdown in the UI
 
 ---
 
-## Phase 9 — Automated Retraining
-> Close the loop: detect drift, retrain, redeploy.
+## Phase 10 — Automated Retraining (Page 8)
+> Close the loop for all task types.
 
-- [x] "Retrain Now" button in the UI (triggered when drift is detected)
-- [x] Scheduled retraining via background job (APScheduler or cron)
-- [x] New experiment auto-logged to MLflow
-- [x] Auto-compare new model vs. current production model
-- [x] Optional auto-promotion if new model performs better
+- [x] "Retrain Now" button
+- [x] Scheduled retraining via APScheduler
+- [x] New experiments auto-logged to MLflow
+- [x] Auto-compare new vs. current production model
+- [x] Optional auto-promotion if new model is better
+- [x] **[NEW]** Task-aware comparison logic:
+  - [x] Supervised: compare primary metric (F1, RMSE, etc.)
+  - [x] Clustering: compare silhouette score on validation data
+  - [x] Anomaly: compare anomaly score distribution stability
 
 ---
 
-## Phase 10 — Dockerization & Deployment
-> One command to run everything.
+## Phase 11 — Dockerization & Deployment
+> One command to run the full stack.
 
-- [x] `docker-compose.yml` with all services:
-  - [x] Streamlit app
-  - [x] FastAPI API
-  - [x] MLflow tracking server
-  - [x] Prometheus
-  - [x] Grafana
-- [x] `Dockerfile.streamlit`
-- [x] `Dockerfile.api`
-- [x] GitHub Actions CI/CD:
-  - [x] Lint (`flake8`, `black`)
-  - [x] Test (`pytest`)
-  - [x] Build Docker image
-  - [x] Deploy to VPS on merge to `main` (placeholder — uncomment `deploy` job in `ci.yml` and set VPS secrets)
-- [x] Production environment configuration (`.env.example`)
-- [x] Deploy and verify on VPS (user-managed; `docker compose up --build` after copying `.env.example` to `.env`)
+- [x] `docker-compose.yml` with all services
+- [x] `Dockerfile.streamlit` and `Dockerfile.api`
+- [x] GitHub Actions CI/CD (lint, test, build, deploy)
+- [x] `.env.example`
+- [x] **[NEW]** Update Docker builds to include new dependencies (`umap-learn`, `shap`, etc.)
+- [ ] **[NEW]** Verify end-to-end flow for each task type in CI (integration tests per task)
+- [x] **[NEW]** Add task-type smoke tests to `pytest` suite

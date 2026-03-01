@@ -1,0 +1,14 @@
+task_type: multiclass_classification
+primary_metric: f1
+secondary_metrics: [accuracy, precision, recall, roc_auc]
+default_models: [random_forest, xgboost, logistic_regression]
+default_cv_folds: 5
+default_test_size: 0.2
+default_val_size: 0.1
+optuna_n_trials: 30
+optuna_metric: f1
+comparison_higher_is_better: true
+preprocessing_defaults:
+  scaling: standard
+  imputation: median
+  encoding: onehot

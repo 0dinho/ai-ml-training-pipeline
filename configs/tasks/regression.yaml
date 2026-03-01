@@ -1,0 +1,14 @@
+task_type: regression
+primary_metric: r2
+secondary_metrics: [mse, rmse, mae]
+default_models: [random_forest, xgboost, ridge]
+default_cv_folds: 5
+default_test_size: 0.2
+default_val_size: 0.1
+optuna_n_trials: 30
+optuna_metric: r2
+comparison_higher_is_better: true
+preprocessing_defaults:
+  scaling: standard
+  imputation: median
+  encoding: onehot

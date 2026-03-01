@@ -32,37 +32,44 @@ def load_pipeline() -> Any | None:
     return None
 
 
-def load_active_model() -> Any | None:
-    """Load the active model.
+def load_active_model() -> "Any | None":
+    """Load the active model as a ModelAdapter.
 
     Priority order:
       1. MLflow Model Registry  (when ``MLFLOW_MODEL_NAME`` env var is set)
       2. Explicit ``MODEL_PATH`` env var
-      3. Auto-detect: the most recently modified ``*_model.joblib`` in ``artifacts/``
+      3. Auto-detect: most recently modified ``*_adapter.joblib`` or ``*_model.joblib``
+         in ``artifacts/`` — both are wrapped transparently via ModelAdapter.load().
     """
+    from src.models.adapter import ModelAdapter
+
     # 1. MLflow registry
     if MLFLOW_MODEL_NAME:
         try:
             import mlflow.sklearn
             mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
             uri = f"models:/{MLFLOW_MODEL_NAME}/{MLFLOW_MODEL_STAGE}"
-            model = mlflow.sklearn.load_model(uri)
+            raw = mlflow.sklearn.load_model(uri)
             print(f"[model_loader] Loaded from MLflow registry: {uri}")
-            return model
+            # Wrap legacy raw estimators
+            if not isinstance(raw, ModelAdapter):
+                return ModelAdapter._wrap_legacy(raw)
+            return raw
         except Exception as e:
             print(f"[model_loader] MLflow load failed ({e}), falling back to disk.")
 
     # 2. Explicit path
     if MODEL_PATH and os.path.exists(MODEL_PATH):
         print(f"[model_loader] Loaded from explicit path: {MODEL_PATH}")
-        return joblib.load(MODEL_PATH)
+        return ModelAdapter.load(MODEL_PATH)
 
-    # 3. Auto-detect in artifacts/
+    # 3. Auto-detect in artifacts/ — prefer *_adapter.joblib, fall back to *_model.joblib
     artifact_dir = "artifacts"
     if os.path.isdir(artifact_dir):
+        all_files = os.listdir(artifact_dir)
         candidates = [
-            f for f in os.listdir(artifact_dir)
-            if f.endswith("_model.joblib")
+            f for f in all_files
+            if f.endswith("_adapter.joblib") or f.endswith("_model.joblib")
         ]
         if candidates:
             candidates.sort(
@@ -71,7 +78,7 @@ def load_active_model() -> Any | None:
             )
             path = os.path.join(artifact_dir, candidates[0])
             print(f"[model_loader] Auto-detected model: {path}")
-            return joblib.load(path)
+            return ModelAdapter.load(path)
 
     print("[model_loader] No model found.")
     return None

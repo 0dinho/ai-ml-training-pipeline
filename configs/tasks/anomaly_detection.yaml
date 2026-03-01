@@ -1,0 +1,16 @@
+task_type: anomaly_detection
+primary_metric: anomaly_ratio
+secondary_metrics: [n_anomalies]
+default_models: [isolation_forest, one_class_svm, lof]
+default_cv_folds: 3
+default_test_size: 0.0
+default_val_size: 0.0
+optuna_n_trials: 20
+optuna_metric: anomaly_ratio
+comparison_higher_is_better: false
+default_contamination: 0.05
+preprocessing_defaults:
+  scaling: standard
+  imputation: median
+  encoding: onehot
+notes: "No train/val/test split — full dataset used for fitting."

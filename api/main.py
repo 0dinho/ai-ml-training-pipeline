@@ -34,11 +34,13 @@ from api.metrics import (
     metrics_response,
     record_prediction,
 )
+from src.pipelines.training import MODEL_DISPLAY_NAMES
 from api.model_loader import load_active_model, load_pipeline, load_schema
 from api.schemas import (
     BatchPredictRequest,
     BatchPredictResponse,
     HealthResponse,
+    ModelInfoResponse,
     PredictRequest,
     PredictResponse,
     validate_features,
@@ -145,36 +147,74 @@ def _run_inference(rows: list[dict[str, Any]]) -> list[PredictResponse]:
     except Exception as exc:
         raise HTTPException(422, detail=f"Preprocessing failed: {exc}")
 
-    # Predict
-    y_pred: np.ndarray = model.predict(X)
+    # Determine task type from adapter or schema
+    from src.models.adapter import ModelAdapter
+    task_type: str = "binary_classification"
+    if isinstance(model, ModelAdapter):
+        task_type = model.canonical_task_type()
+    elif schema:
+        task_type = schema.get("task_type", "binary_classification")
 
-    y_proba: np.ndarray | None = None
-    if hasattr(model, "predict_proba"):
-        try:
-            y_proba = model.predict_proba(X)
-        except Exception:
-            pass
-
-    task_type: str = schema.get("task_type", "classification") if schema else "classification"
-
+    # Predict — dispatch by task type
     results: list[PredictResponse] = []
-    for i, pred in enumerate(y_pred):
-        probabilities: list[float] | None = None
-        confidence: float | None = None
 
-        if task_type == "classification" and y_proba is not None:
-            probabilities = [round(float(p), 6) for p in y_proba[i]]
-            confidence = round(float(max(y_proba[i])), 6)
+    if isinstance(model, ModelAdapter) and model.is_reduction():
+        # Dimensionality reduction: transform returns 2D array
+        coords = model.transform(X)
+        for i in range(len(coords)):
+            row_coords = [round(float(c), 6) for c in coords[i]]
+            record_prediction(0, task_type, None)
+            results.append(PredictResponse(prediction=None, reduced_coords=row_coords))
 
-        record_prediction(pred, task_type, confidence)
+    elif isinstance(model, ModelAdapter) and model.is_anomaly():
+        preds = model.predict(X)
+        scores = model.decision_scores(X)
+        for i, pred in enumerate(preds):
+            score = float(scores[i]) if scores is not None else None
+            record_prediction(int(pred), task_type, None)
+            results.append(PredictResponse(
+                prediction=int(pred),
+                is_anomaly=bool(pred == 1),
+                anomaly_score=round(score, 6) if score is not None else None,
+            ))
 
-        results.append(
-            PredictResponse(
+    elif isinstance(model, ModelAdapter) and model.is_clustering():
+        labels = model.predict(X)
+        for label in labels:
+            record_prediction(int(label), task_type, None)
+            results.append(PredictResponse(
+                prediction=int(label),
+                cluster_label=int(label),
+            ))
+
+    else:
+        # Supervised: classification or regression
+        y_pred: np.ndarray = model.predict(X)
+
+        y_proba: np.ndarray | None = None
+        if isinstance(model, ModelAdapter):
+            y_proba = model.predict_proba(X)
+        elif hasattr(model, "predict_proba"):
+            try:
+                y_proba = model.predict_proba(X)
+            except Exception:
+                pass
+
+        for i, pred in enumerate(y_pred):
+            probabilities: list[float] | None = None
+            confidence: float | None = None
+
+            if task_type in ("binary_classification", "multiclass_classification",
+                             "classification") and y_proba is not None:
+                probabilities = [round(float(p), 6) for p in y_proba[i]]
+                confidence = round(float(max(y_proba[i])), 6)
+
+            record_prediction(pred, task_type, confidence)
+            results.append(PredictResponse(
                 prediction=pred.item() if isinstance(pred, np.generic) else pred,
                 probabilities=probabilities,
                 confidence=confidence,
-            )
-        )
+            ))
 
     return results
 
@@ -191,6 +231,43 @@ async def health() -> HealthResponse:
         pipeline_loaded=_state["pipeline"] is not None,
         schema_loaded=schema is not None,
         task_type=schema.get("task_type") if schema else None,
+    )
+
+
+@app.get("/model/info", response_model=ModelInfoResponse, tags=["infra"])
+async def model_info() -> ModelInfoResponse:
+    """Return metadata about the currently loaded model."""
+    model = _state["model"]
+    schema = _state["schema"]
+
+    if model is None:
+        raise HTTPException(503, detail="No model loaded.")
+
+    from src.models.adapter import ModelAdapter
+    if isinstance(model, ModelAdapter):
+        return ModelInfoResponse(
+            model_name=MODEL_DISPLAY_NAMES.get(model.model_type, model.model_type),
+            model_type=model.model_type,
+            task_type=model.canonical_task_type(),
+            feature_names=model.feature_names,
+            target_column=model.target_column,
+            n_features=len(model.feature_names),
+            classes=model.classes_ if model.classes_ else None,
+            n_components=model.n_components_,
+            metadata=model.metadata,
+        )
+
+    # Legacy raw estimator fallback
+    feature_names = schema.get("feature_names", []) if schema else []
+    task_type = schema.get("task_type", "unknown") if schema else "unknown"
+    target_column = schema.get("target_column", "") if schema else ""
+    return ModelInfoResponse(
+        model_name=type(model).__name__,
+        model_type=type(model).__name__.lower(),
+        task_type=task_type,
+        feature_names=feature_names,
+        target_column=target_column,
+        n_features=len(feature_names),
     )
 
 

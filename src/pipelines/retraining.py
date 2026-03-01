@@ -26,7 +26,10 @@ from src.pipelines.training import (
     TrainingResult,
     compute_metrics,
     get_default_params,
+    is_classification_type,
+    is_supervised,
     log_to_mlflow,
+    normalize_task_type,
     save_model,
     train_model,
 )
@@ -106,34 +109,73 @@ def _load_splits(
 
 
 def _load_current_model(model_type: str, artifact_dir: str = ARTIFACT_DIR) -> Any | None:
-    """Return the most recently saved joblib model for *model_type*, or None."""
-    path = os.path.join(artifact_dir, f"{model_type}_model.joblib")
-    if os.path.exists(path):
-        try:
-            return joblib.load(path)
-        except Exception:
-            return None
+    """Return the most recently saved model for *model_type*, or None.
+
+    Checks for both new ModelAdapter format ({model_type}_adapter.joblib) and
+    legacy format ({model_type}_model.joblib).
+    """
+    from src.models.adapter import ModelAdapter
+
+    for filename in (f"{model_type}_adapter.joblib", f"{model_type}_model.joblib"):
+        path = os.path.join(artifact_dir, filename)
+        if os.path.exists(path):
+            try:
+                return ModelAdapter.load(path)
+            except Exception:
+                return None
     return None
 
 
 def _primary_key(task_type: str) -> str:
-    return "accuracy" if task_type == "classification" else "r2"
+    """Return the primary evaluation metric for the given task type."""
+    task_type = normalize_task_type(task_type)
+    mapping = {
+        "binary_classification": "accuracy",
+        "multiclass_classification": "accuracy",
+        "regression": "r2",
+        "clustering": "silhouette",
+        "anomaly_detection": "anomaly_ratio",
+        "dimensionality_reduction": "explained_variance",
+    }
+    return mapping.get(task_type, "accuracy")
+
+
+def _higher_is_better(task_type: str) -> bool:
+    """Return True when a higher primary metric value means a better model.
+
+    For anomaly_detection the primary metric is anomaly_ratio, which does not
+    follow a simple "higher is better" rule — a stable or lower ratio is
+    preferable, so this returns False.
+    """
+    return normalize_task_type(task_type) != "anomaly_detection"
 
 
 def _eval_on_test(
     model: Any,
     X_test: np.ndarray,
-    y_test: np.ndarray,
+    y_test: np.ndarray | None,
     task_type: str,
 ) -> dict[str, float]:
-    y_pred = model.predict(X_test)
-    y_proba = None
-    if task_type == "classification" and hasattr(model, "predict_proba"):
-        try:
-            y_proba = model.predict_proba(X_test)
-        except Exception:
-            pass
-    return compute_metrics(y_test, y_pred, task_type, y_proba)
+    task_type = normalize_task_type(task_type)
+
+    # Handle ModelAdapter and raw estimators uniformly
+    from src.models.adapter import ModelAdapter
+    if isinstance(model, ModelAdapter):
+        y_pred = model.predict(X_test)
+        y_proba = model.predict_proba(X_test) if model.is_classification() else None
+    else:
+        y_pred = model.predict(X_test)
+        y_proba = None
+        if is_classification_type(task_type) and hasattr(model, "predict_proba"):
+            try:
+                y_proba = model.predict_proba(X_test)
+            except Exception:
+                pass
+
+    if is_supervised(task_type) and y_test is not None:
+        return compute_metrics(y_test, y_pred, task_type, y_proba)
+    else:
+        return compute_metrics(None, y_pred, task_type, X=X_test)
 
 
 # ── Public API ─────────────────────────────────────────────────────────────────
@@ -196,9 +238,16 @@ def run_retraining(
     model_name = MODEL_DISPLAY_NAMES.get(model_type, model_type)
     _log(f"Starting retraining — model={model_type}, task={task_type}")
 
+    task_type = normalize_task_type(task_type)
+
     # ── 1. Load data ──────────────────────────────────────────────────────────
     _log("Loading processed data splits…")
     X_train, X_val, X_test, y_train, y_val, y_test = _load_splits(data_dir)
+
+    # For unsupervised tasks, y arrays contain dummy NaN values — treat as None
+    if not is_supervised(task_type):
+        y_train, y_val, y_test = None, None, None
+
     _log(
         f"Loaded — train: {len(X_train)}, val: {len(X_val)}, test: {len(X_test)} rows"
     )
@@ -249,7 +298,11 @@ def run_retraining(
     pk = _primary_key(task_type)
     new_score = new_test_metrics.get(pk, 0.0)
     old_score = old_test_metrics.get(pk, 0.0) if old_test_metrics else None
-    improved = old_score is None or new_score > old_score
+    if task_type == "anomaly_detection":
+        # For anomaly detection: stable (within 5pp) or lower ratio counts as improved
+        improved = old_score is None or abs(new_score - old_score) < 0.05 or new_score < old_score
+    else:
+        improved = old_score is None or new_score > old_score
     delta = new_score - (old_score if old_score is not None else 0.0)
     _log(
         f"Comparison — {pk}: new={new_score:.4f}, "

@@ -13,7 +13,26 @@ from src.utils.data_utils import (
     compute_correlation_matrix,
     compute_class_balance,
     get_numerical_stats,
+    detect_task_type,
 )
+
+TASK_OPTIONS = [
+    "binary_classification",
+    "multiclass_classification",
+    "regression",
+    "clustering",
+    "dimensionality_reduction",
+    "anomaly_detection",
+]
+TASK_LABELS = {
+    "binary_classification": "Binary Classification",
+    "multiclass_classification": "Multiclass Classification",
+    "regression": "Regression",
+    "clustering": "Clustering",
+    "dimensionality_reduction": "Dimensionality Reduction",
+    "anomaly_detection": "Anomaly Detection",
+}
+UNSUPERVISED_TASKS = {"clustering", "dimensionality_reduction", "anomaly_detection"}
 
 st.set_page_config(page_title="Upload & Explore", page_icon="📊", layout="wide")
 
@@ -222,13 +241,23 @@ with tab_corr:
 
 # ── Target Analysis ───────────────────────────────────────────────────────────
 with tab_target:
-    if not st.session_state.get("target_column"):
+    task = st.session_state.get("task_type", "")
+    target = st.session_state.get("target_column", "")
+
+    if task in UNSUPERVISED_TASKS:
+        st.info(
+            f"**{TASK_LABELS.get(task, task)}** task selected — no target column required. "
+            "The model will be trained on all features."
+        )
+        if task == "anomaly_detection":
+            st.warning(
+                "For anomaly detection, configure the contamination rate (expected "
+                "fraction of anomalies) in the Training page."
+            )
+    elif not target:
         st.info("Select a target column below to see target analysis.")
     else:
-        target = st.session_state["target_column"]
-        task = st.session_state.get("task_type", "classification")
-
-        if task == "classification":
+        if task in ("binary_classification",):
             balance_df = compute_class_balance(df, target)
             c1, c2 = st.columns(2)
             with c1:
@@ -245,7 +274,17 @@ with tab_target:
                 )
                 fig.update_layout(**PLOTLY_LAYOUT, title="Class Proportions")
                 st.plotly_chart(fig, width='stretch')
-        else:
+
+        elif task == "multiclass_classification":
+            balance_df = compute_class_balance(df, target)
+            fig = px.bar(
+                balance_df, x="class", y="count",
+                color_discrete_sequence=COLORWAY,
+            )
+            fig.update_layout(**PLOTLY_LAYOUT, title=f"Class Distribution ({balance_df.shape[0]} classes)")
+            st.plotly_chart(fig, width='stretch')
+
+        elif task == "regression":
             c1, c2 = st.columns(2)
             with c1:
                 fig = px.histogram(
@@ -260,42 +299,69 @@ with tab_target:
                 fig.update_layout(**PLOTLY_LAYOUT, title=f"Box Plot of {target}")
                 st.plotly_chart(fig, width='stretch')
 
+        else:
+            # Legacy "classification" fallback
+            balance_df = compute_class_balance(df, target)
+            st.dataframe(balance_df, hide_index=True)
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Section 5: Target & Task Configuration
 # ═══════════════════════════════════════════════════════════════════════════════
 st.header("Target & Task Configuration")
 
-target_col = st.selectbox(
-    "Select target column",
-    options=df.columns.tolist(),
-    index=(
-        df.columns.tolist().index(st.session_state["target_column"])
-        if st.session_state.get("target_column") in df.columns.tolist()
-        else 0
-    ),
+# Task type selector
+current_task = st.session_state.get("task_type", "")
+# Normalize legacy "classification"
+if current_task == "classification":
+    current_task = "binary_classification"
+
+task_type = st.selectbox(
+    "Task type",
+    options=TASK_OPTIONS,
+    format_func=lambda t: TASK_LABELS[t],
+    index=TASK_OPTIONS.index(current_task) if current_task in TASK_OPTIONS else 0,
+    help="Select the ML task. For clustering/dimensionality reduction/anomaly detection, no target column is needed.",
 )
 
-# Auto-suggest task type
-suggested_task = (
-    "regression" if column_types.get(target_col) == "numerical" else "classification"
-)
-task_options = ["classification", "regression"]
-task_type = st.radio(
-    "Task type",
-    options=task_options,
-    index=task_options.index(suggested_task),
-    horizontal=True,
-)
+# Target column selector — only shown for supervised tasks
+target_col = ""
+if task_type not in UNSUPERVISED_TASKS:
+    # Auto-suggest task type from target column
+    suggested_target = st.session_state.get("target_column", df.columns[0])
+    if suggested_target not in df.columns:
+        suggested_target = df.columns[0]
+
+    target_col = st.selectbox(
+        "Select target column",
+        options=df.columns.tolist(),
+        index=(
+            df.columns.tolist().index(suggested_target)
+            if suggested_target in df.columns.tolist()
+            else 0
+        ),
+    )
+
+    # Auto-suggest task type when user selects a target
+    auto_suggested = detect_task_type(df, target_col)
+    if auto_suggested != task_type:
+        st.caption(f"💡 Auto-detected: **{TASK_LABELS.get(auto_suggested, auto_suggested)}** based on target column characteristics.")
+
+else:
+    st.info(f"**{TASK_LABELS[task_type]}** does not require a target column.")
 
 if st.button("Confirm Configuration", type="primary"):
     st.session_state["target_column"] = target_col
     st.session_state["task_type"] = task_type
     st.rerun()
 
-if st.session_state.get("target_column") and st.session_state.get("task_type"):
-    st.success(
-        f"**Target:** `{st.session_state['target_column']}` | "
-        f"**Task:** `{st.session_state['task_type']}`"
-    )
+configured = st.session_state.get("task_type")
+if configured:
+    _tgt = st.session_state.get("target_column", "")
+    if _tgt:
+        st.success(
+            f"**Target:** `{_tgt}` | **Task:** `{TASK_LABELS.get(configured, configured)}`"
+        )
+    else:
+        st.success(f"**Task:** `{TASK_LABELS.get(configured, configured)}`")
     st.page_link("pages/2_Preprocessing.py", label="Continue to Preprocessing →")

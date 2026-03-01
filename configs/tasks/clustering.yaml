@@ -1,0 +1,15 @@
+task_type: clustering
+primary_metric: silhouette
+secondary_metrics: [davies_bouldin, calinski_harabasz, n_clusters]
+default_models: [kmeans, dbscan, agglomerative]
+default_cv_folds: 3
+default_test_size: 0.0
+default_val_size: 0.0
+optuna_n_trials: 20
+optuna_metric: silhouette
+comparison_higher_is_better: true
+preprocessing_defaults:
+  scaling: standard
+  imputation: median
+  encoding: onehot
+notes: "No train/val/test split — full dataset used for fitting."

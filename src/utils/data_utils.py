@@ -125,3 +125,37 @@ def get_numerical_stats(df: pd.DataFrame, column_types: dict[str, str]) -> pd.Da
     if not num_cols:
         return None
     return df[num_cols].describe().T
+
+
+def detect_task_type(df: pd.DataFrame, target_col: str | None) -> str:
+    """Auto-suggest one of the 6 canonical task types based on target column properties.
+
+    Rules:
+      - No target column selected  → "clustering" (default unsupervised)
+      - Target is non-numeric      → classify by unique count
+      - Target is numeric + 2 unique values → "binary_classification"
+      - Target is numeric + 3–20 unique values → heuristic: classification vs regression
+      - Target is numeric + >20 unique values → "regression"
+
+    Returns one of:
+        "binary_classification", "multiclass_classification", "regression",
+        "clustering"
+    """
+    if not target_col or target_col not in df.columns:
+        return "clustering"
+
+    series = df[target_col].dropna()
+    n_unique = series.nunique()
+    is_numeric = pd.api.types.is_numeric_dtype(series)
+
+    if n_unique == 2:
+        return "binary_classification"
+    elif not is_numeric:
+        if n_unique <= 20:
+            return "multiclass_classification"
+        return "multiclass_classification"  # text target → treat as multiclass
+    elif n_unique <= 20:
+        # Numeric with few unique values → likely classification
+        return "multiclass_classification"
+    else:
+        return "regression"

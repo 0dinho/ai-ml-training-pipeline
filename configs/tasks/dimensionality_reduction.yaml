@@ -1,0 +1,16 @@
+task_type: dimensionality_reduction
+primary_metric: explained_variance
+secondary_metrics: [n_components]
+default_models: [pca, umap]
+default_cv_folds: 3
+default_test_size: 0.0
+default_val_size: 0.0
+optuna_n_trials: 10
+optuna_metric: explained_variance
+comparison_higher_is_better: true
+default_n_components: 2
+preprocessing_defaults:
+  scaling: standard
+  imputation: median
+  encoding: onehot
+notes: "No train/val/test split — full dataset used for fitting."

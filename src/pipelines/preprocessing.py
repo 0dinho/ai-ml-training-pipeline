@@ -30,7 +30,7 @@ from sklearn.preprocessing import (
 
 def generate_smart_defaults(
     column_types: dict[str, str],
-    target_column: str,
+    target_column: str | None,
 ) -> dict[str, dict]:
     """Return per-column config dict with sensible defaults.
 
@@ -41,10 +41,11 @@ def generate_smart_defaults(
       - text       → action=drop
 
     The *target_column* is excluded from the config.
+    Pass None or '' for unsupervised tasks (no target).
     """
     config: dict[str, dict] = {}
     for col, ctype in column_types.items():
-        if col == target_column:
+        if target_column and col == target_column:
             continue
         if ctype == "numerical":
             config[col] = {
@@ -111,23 +112,57 @@ def drop_rows_with_missing(
 # Train / val / test split
 # ---------------------------------------------------------------------------
 
+_CLASSIFICATION_TYPES = frozenset(
+    {"binary_classification", "multiclass_classification", "classification"}
+)
+_UNSUPERVISED_TYPES = frozenset(
+    {"clustering", "anomaly_detection", "dimensionality_reduction"}
+)
+
+
 def split_data(
     df: pd.DataFrame,
-    target: str,
+    target: str | None,
     test_size: float = 0.2,
     val_size: float = 0.1,
     random_state: int = 42,
-    task_type: str = "classification",
+    task_type: str = "binary_classification",
 ) -> dict:
     """Split *df* into train / val / test sets.
 
     For classification the splits are stratified on the target.
+    For unsupervised tasks (target is None or ''), splits only X;
+    y_train / y_val / y_test are returned as None.
+
     Returns dict with keys X_train, X_val, X_test, y_train, y_val, y_test.
     """
+    if task_type == "classification":
+        task_type = "binary_classification"
+
+    # ── Unsupervised: no target ─────────────────────────────────────────
+    if task_type in _UNSUPERVISED_TYPES or not target:
+        X = df
+        X_temp, X_test = train_test_split(
+            X, test_size=test_size, random_state=random_state,
+        )
+        relative_val = val_size / (1.0 - test_size)
+        X_train, X_val = train_test_split(
+            X_temp, test_size=relative_val, random_state=random_state,
+        )
+        return {
+            "X_train": X_train,
+            "X_val": X_val,
+            "X_test": X_test,
+            "y_train": None,
+            "y_val": None,
+            "y_test": None,
+        }
+
+    # ── Supervised ──────────────────────────────────────────────────────
     X = df.drop(columns=[target])
     y = df[target]
 
-    stratify = y if task_type == "classification" else None
+    stratify = y if task_type in _CLASSIFICATION_TYPES else None
 
     # First split: train+val vs test
     X_temp, X_test, y_temp, y_test = train_test_split(
@@ -139,7 +174,7 @@ def split_data(
 
     # Second split: train vs val (relative to remaining data)
     relative_val = val_size / (1.0 - test_size)
-    stratify_temp = y_temp if task_type == "classification" else None
+    stratify_temp = y_temp if task_type in _CLASSIFICATION_TYPES else None
 
     X_train, X_val, y_train, y_val = train_test_split(
         X_temp, y_temp,
@@ -272,20 +307,24 @@ def build_preprocessing_pipeline(
 def fit_and_transform(
     pipeline: ColumnTransformer,
     X_train: pd.DataFrame,
-    X_val: pd.DataFrame,
-    X_test: pd.DataFrame,
+    X_val: pd.DataFrame | None,
+    X_test: pd.DataFrame | None,
     y_train: pd.Series | None = None,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str]]:
+) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None, list[str]]:
     """Fit on train, transform all splits.
 
     *y_train* is forwarded to ``pipeline.fit`` to support TargetEncoder.
+    X_val and X_test may be None for unsupervised tasks that use the full
+    dataset for fitting (no train/val/test split).
+
     Returns (X_train_t, X_val_t, X_test_t, feature_names).
+    X_val_t and X_test_t are None when inputs are None.
     """
     pipeline.fit(X_train, y_train)
 
     X_train_t = pipeline.transform(X_train)
-    X_val_t = pipeline.transform(X_val)
-    X_test_t = pipeline.transform(X_test)
+    X_val_t = pipeline.transform(X_val) if X_val is not None else None
+    X_test_t = pipeline.transform(X_test) if X_test is not None else None
 
     try:
         feature_names = list(pipeline.get_feature_names_out())
@@ -312,15 +351,20 @@ def save_pipeline(
 
 def save_processed_data(
     X_train: np.ndarray,
-    X_val: np.ndarray,
-    X_test: np.ndarray,
-    y_train: pd.Series,
-    y_val: pd.Series,
-    y_test: pd.Series,
+    X_val: np.ndarray | None,
+    X_test: np.ndarray | None,
+    y_train: pd.Series | None,
+    y_val: pd.Series | None,
+    y_test: pd.Series | None,
     feature_names: list[str],
     output_dir: str = "data/processed",
 ) -> dict[str, str]:
-    """Save six CSV files to *output_dir*. Returns {name: path} mapping."""
+    """Save processed data to *output_dir*. Returns {name: path} mapping.
+
+    For unsupervised tasks, X_val / X_test and y_* may be None.
+    Dummy NaN CSV files are written for y_* so the retraining orchestrator
+    can always find 6 CSV files on disk.
+    """
     os.makedirs(output_dir, exist_ok=True)
     paths: dict[str, str] = {}
 
@@ -329,10 +373,16 @@ def save_processed_data(
         ("X_val", X_val),
         ("X_test", X_test),
     ]:
-        df = pd.DataFrame(arr, columns=feature_names)
-        p = os.path.join(output_dir, f"{name}.csv")
-        df.to_csv(p, index=False)
-        paths[name] = p
+        if arr is None:
+            # Write an empty CSV with the right headers
+            pd.DataFrame(columns=feature_names).to_csv(
+                os.path.join(output_dir, f"{name}.csv"), index=False
+            )
+        else:
+            df = pd.DataFrame(arr, columns=feature_names)
+            p = os.path.join(output_dir, f"{name}.csv")
+            df.to_csv(p, index=False)
+            paths[name] = p
 
     for name, series in [
         ("y_train", y_train),
@@ -340,7 +390,10 @@ def save_processed_data(
         ("y_test", y_test),
     ]:
         p = os.path.join(output_dir, f"{name}.csv")
-        series.reset_index(drop=True).to_csv(p, index=False, header=True)
+        if series is None:
+            pd.DataFrame({"target": [np.nan]}).to_csv(p, index=False)
+        else:
+            series.reset_index(drop=True).to_csv(p, index=False, header=True)
         paths[name] = p
 
     return paths

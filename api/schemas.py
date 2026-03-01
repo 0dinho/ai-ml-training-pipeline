@@ -44,9 +44,17 @@ class BatchPredictRequest(BaseModel):
 # ── Response models ────────────────────────────────────────────────────────────
 
 class PredictResponse(BaseModel):
+    # ── Supervised fields ──────────────────────────────────────────────────────
     prediction: Any
     probabilities: list[float] | None = None
     confidence: float | None = None
+    # ── Clustering ─────────────────────────────────────────────────────────────
+    cluster_label: int | None = None
+    # ── Anomaly detection ──────────────────────────────────────────────────────
+    is_anomaly: bool | None = None
+    anomaly_score: float | None = None
+    # ── Dimensionality reduction ───────────────────────────────────────────────
+    reduced_coords: list[float] | None = None
 
 
 class BatchPredictResponse(BaseModel):
@@ -60,6 +68,19 @@ class HealthResponse(BaseModel):
     pipeline_loaded: bool
     schema_loaded: bool
     task_type: str | None = None
+
+
+class ModelInfoResponse(BaseModel):
+    """Detailed model metadata returned by GET /model/info."""
+    model_name: str
+    model_type: str
+    task_type: str
+    feature_names: list[str]
+    target_column: str
+    n_features: int
+    classes: list[Any] | None = None
+    n_components: int | None = None
+    metadata: dict[str, Any] = {}
 
 
 # ── Schema-based validation ────────────────────────────────────────────────────
