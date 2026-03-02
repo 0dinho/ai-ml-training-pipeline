@@ -341,14 +341,18 @@ with tab_lda:
         if max_lda_components < 1:
             st.warning("Not enough classes to run LDA (need at least 2 classes).")
         else:
-            lda_n_components = st.slider(
-                "n_components",
-                min_value=1,
-                max_value=max_lda_components,
-                value=min(2, max_lda_components),
-                key="lda_n_components",
-                help=f"Max {max_lda_components} (= n_classes - 1).",
-            )
+            if max_lda_components == 1:
+                lda_n_components = 1
+                st.info("Only 2 classes detected → LDA will produce 1 component.")
+            else:
+                lda_n_components = st.slider(
+                    "n_components",
+                    min_value=1,
+                    max_value=max_lda_components,
+                    value=min(2, max_lda_components),
+                    key="lda_n_components",
+                    help=f"Max {max_lda_components} (= n_classes - 1).",
+                )
 
             st.info("LDA always acts as a **preprocessing step** (transforms train/val/test).")
 
