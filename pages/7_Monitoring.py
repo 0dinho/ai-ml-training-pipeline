@@ -188,7 +188,7 @@ else:
             fig.update_layout(
                 yaxis_title="Latency (ms)", **PLOTLY_LAYOUT
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         else:
             st.info("No latency data yet — send some requests to the API.")
 
@@ -215,7 +215,7 @@ else:
                 yaxis_title="Count",
                 **PLOTLY_LAYOUT,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         else:
             st.info("No prediction class data yet.")
 
@@ -347,7 +347,7 @@ if "drift_results" in st.session_state:
 
     st.dataframe(
         table_df.style.apply(_row_color, axis=1),
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
     )
 
@@ -411,7 +411,7 @@ if "drift_results" in st.session_state:
                         yaxis_title="Proportion",
                         **PLOTLY_LAYOUT,
                     )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
     # ══════════════════════════════════════════════════════════════════════════
     # Section 3b — Per-Feature Drift Score Breakdown
@@ -479,7 +479,7 @@ if "drift_results" in st.session_state:
                 **PLOTLY_LAYOUT,
             )
 
-            st.plotly_chart(fig_psi, use_container_width=True)
+            st.plotly_chart(fig_psi, width='stretch')
 
             # ── Detailed breakdown table ───────────────────────────────────────
             st.caption("**Detailed per-feature breakdown:**")
@@ -506,7 +506,7 @@ if "drift_results" in st.session_state:
             breakdown_df = pd.DataFrame(breakdown_rows)
             st.dataframe(
                 breakdown_df,
-                use_container_width=True,
+                width='stretch',
                 hide_index=True,
                 column_config={
                     "PSI": st.column_config.NumberColumn("PSI", format="%.4f"),
@@ -752,7 +752,7 @@ if "concept_drift_result" in st.session_state:
                 **PLOTLY_LAYOUT,
             )
 
-        st.plotly_chart(fig_concept, use_container_width=True)
+        st.plotly_chart(fig_concept, width='stretch')
 
     except Exception as _exc:
         st.warning(f"Could not render concept drift chart: {_exc}")
@@ -845,7 +845,7 @@ if anomaly_rate_file is not None:
                     **PLOTLY_LAYOUT,
                 )
 
-                st.plotly_chart(fig_anomaly, use_container_width=True)
+                st.plotly_chart(fig_anomaly, width='stretch')
 
                 # Summary stats
                 _ar_col1, _ar_col2, _ar_col3 = st.columns(3)
@@ -1000,7 +1000,7 @@ if _task_type_mon == "clustering":
                 yaxis_tickformat=".1%",
                 **PLOTLY_LAYOUT,
             )
-            st.plotly_chart(_fig_cd, use_container_width=True)
+            st.plotly_chart(_fig_cd, width='stretch')
         except Exception as _exc:
             st.warning(f"Could not render cluster distribution chart: {_exc}")
 
@@ -1087,7 +1087,7 @@ if _task_type_mon == "clustering":
                             yaxis_title="Density",
                             **PLOTLY_LAYOUT,
                         )
-                        st.plotly_chart(_fig_dist_cd, use_container_width=True)
+                        st.plotly_chart(_fig_dist_cd, width='stretch')
                     except Exception as _exc:
                         st.warning(f"Could not render distance histogram: {_exc}")
 
@@ -1213,7 +1213,7 @@ with st.form("retrain_form"):
     _submitted = st.form_submit_button(
         "🔄 Retrain Now",
         type="primary",
-        use_container_width=True,
+        width='stretch',
     )
 
 if _submitted:
@@ -1293,7 +1293,7 @@ if _history:
     _hist_df = pd.DataFrame(list(reversed(_history)))
     st.dataframe(
         _hist_df,
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
         column_config={
             "improved": st.column_config.CheckboxColumn("Improved"),

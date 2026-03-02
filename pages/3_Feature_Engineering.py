@@ -283,7 +283,7 @@ with tab_pca:
                     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
                     **PLOTLY_LAYOUT,
                 )
-                st.plotly_chart(fig_scree, use_container_width=True)
+                st.plotly_chart(fig_scree, width='stretch')
 
                 # ── Component loadings table ──────────────────────────────────
                 loadings = pd.DataFrame(
@@ -302,7 +302,7 @@ with tab_pca:
                                 "Feature": feat,
                                 "Loading": round(loadings.loc[feat, comp_col], 4),
                             })
-                    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+                    st.dataframe(pd.DataFrame(rows), width='stretch', hide_index=True)
 
                 if pca_mode == "Use as preprocessing step":
                     _store_fe_result(X_tr_pca, X_vl_pca, X_te_pca, pca_feat_names, "PCA", pca)
@@ -380,7 +380,7 @@ with tab_lda:
                                 label_name="class",
                                 dim_names=["LD1", "LD2"],
                             )
-                            st.plotly_chart(fig_lda, use_container_width=True)
+                            st.plotly_chart(fig_lda, width='stretch')
                         elif lda_n_components == 1:
                             df_lda1d = pd.DataFrame({"LD1": X_tr_lda[:, 0], "class": y_train.astype(str)})
                             fig_lda = px.histogram(
@@ -390,7 +390,7 @@ with tab_lda:
                                 title="LDA 1D Projection (training set)",
                             )
                             fig_lda.update_layout(**PLOTLY_LAYOUT)
-                            st.plotly_chart(fig_lda, use_container_width=True)
+                            st.plotly_chart(fig_lda, width='stretch')
 
                         _store_fe_result(
                             X_tr_lda, X_vl_lda, X_te_lda,
@@ -452,7 +452,7 @@ with tab_cca:
                             X_cca_train, y_train, cca_feat_names,
                             title="CCA 2D Projection (training set)",
                         )
-                        st.plotly_chart(fig_cca, use_container_width=True)
+                        st.plotly_chart(fig_cca, width='stretch')
                     else:
                         st.line_chart(X_cca_train[:, 0])
 
@@ -464,7 +464,7 @@ with tab_cca:
                                 index=feature_names[:cca.x_rotations_.shape[0]],
                                 columns=cca_feat_names,
                             )
-                            st.dataframe(loadings_df.round(4), use_container_width=True)
+                            st.dataframe(loadings_df.round(4), width='stretch')
 
                     if _cca_mode == "Use as preprocessing step":
                         X_cca_val = cca.transform(X_val) if X_val is not None else None
@@ -548,7 +548,7 @@ with tab_nmf:
                     aspect="auto",
                 )
                 fig_nmf.update_layout(**PLOTLY_LAYOUT)
-                st.plotly_chart(fig_nmf, use_container_width=True)
+                st.plotly_chart(fig_nmf, width='stretch')
 
                 if nmf_mode == "Use as preprocessing step":
                     _store_fe_result(
@@ -615,7 +615,7 @@ with tab_tsne:
                     label_name="class",
                     dim_names=tsne_feat_names,
                 )
-                st.plotly_chart(fig_tsne, use_container_width=True)
+                st.plotly_chart(fig_tsne, width='stretch')
 
                 # Store only for visualization — do NOT set X_train_fe
                 st.session_state["reduction_output"] = X_tsne
@@ -688,7 +688,7 @@ with tab_umap:
                         label_name="class",
                         dim_names=umap_feat_names[:2],
                     )
-                    st.plotly_chart(fig_umap, use_container_width=True)
+                    st.plotly_chart(fig_umap, width='stretch')
 
                     if umap_mode == "Use as preprocessing step":
                         _store_fe_result(
@@ -919,7 +919,7 @@ if fe_applied or reduction_output is not None:
                 label_name="class",
                 dim_names=dim_names_2d,
             )
-            st.plotly_chart(fig_2d, use_container_width=True)
+            st.plotly_chart(fig_2d, width='stretch')
 
         # ── 3D scatter if available ───────────────────────────────────────────
         if X_fe.shape[1] >= 3:
@@ -931,21 +931,21 @@ if fe_applied or reduction_output is not None:
                     label_name="class",
                     dim_names=fn_fe[:3],
                 )
-                st.plotly_chart(fig_3d, use_container_width=True)
+                st.plotly_chart(fig_3d, width='stretch')
 
         # ── Component loadings (if PCA) ───────────────────────────────────────
         if "_pca_loadings" in st.session_state and technique in ("PCA", "PCA+transforms"):
             with st.expander("PCA Component Loadings", expanded=False):
                 st.dataframe(
                     st.session_state["_pca_loadings"].round(4),
-                    use_container_width=True,
+                    width='stretch',
                 )
 
         # ── Data preview table ────────────────────────────────────────────────
         with st.expander("Preview transformed training data (first 10 rows)", expanded=False):
             st.dataframe(
                 pd.DataFrame(X_fe[:10], columns=fn_fe),
-                use_container_width=True,
+                width='stretch',
             )
 
     elif reduction_output is not None:
@@ -966,7 +966,7 @@ if fe_applied or reduction_output is not None:
                 label_name="class",
                 dim_names=vis_dim_names[:3],
             )
-            st.plotly_chart(fig_vis, use_container_width=True)
+            st.plotly_chart(fig_vis, width='stretch')
 
     # ── Clear button ──────────────────────────────────────────────────────────
     if st.button("Clear Feature Engineering", key="btn_clear_fe"):

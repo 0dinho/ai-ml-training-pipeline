@@ -255,7 +255,7 @@ with tab_batch:
                 st.caption(f"Column `{target_column}` was removed from input.")
 
             st.write(f"**Uploaded:** {len(df_new):,} rows × {df_new.shape[1]} columns")
-            st.dataframe(df_new.head(10), use_container_width=True)
+            st.dataframe(df_new.head(10), width='stretch')
 
             missing_cols = [
                 c for c in feature_cols
@@ -371,7 +371,7 @@ with tab_batch:
     if "batch_result_df" in st.session_state:
         result_df = st.session_state["batch_result_df"]
         st.subheader("Prediction Results")
-        st.dataframe(result_df, use_container_width=True)
+        st.dataframe(result_df, width='stretch')
 
         # Summary stats
         if task_type in ("binary_classification", "multiclass_classification"):
@@ -379,7 +379,7 @@ with tab_batch:
             pred_counts.columns = ["Class", "Count"]
             pred_counts["Percentage"] = (pred_counts["Count"] / len(result_df) * 100).round(1)
             st.caption("Prediction distribution:")
-            st.dataframe(pred_counts, use_container_width=True, hide_index=True)
+            st.dataframe(pred_counts, width='stretch', hide_index=True)
 
         elif task_type == "regression" and "prediction" in result_df.columns:
             pred_series = result_df["prediction"]
@@ -540,7 +540,7 @@ with tab_single:
                         yaxis_title="Probability", yaxis=dict(range=[0, 1]),
                         **PLOTLY_LAYOUT,
                     )
-                    st.plotly_chart(proba_fig, use_container_width=True)
+                    st.plotly_chart(proba_fig, width='stretch')
 
             else:  # regression
                 y_pred = pred_out.get("predictions")

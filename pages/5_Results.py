@@ -206,7 +206,7 @@ def _render_shap_tab(r: "TrainingResult", X_data: np.ndarray, feat_names: list[s
         yaxis=dict(autorange="reversed"),
         **PLOTLY_LAYOUT,
     )
-    st.plotly_chart(fig_bar, use_container_width=True)
+    st.plotly_chart(fig_bar, width='stretch')
 
     # Beeswarm-style dot plot — top 15 features
     st.markdown("**Beeswarm dot plot** (x = SHAP value, color = feature value)")
@@ -260,7 +260,7 @@ def _render_shap_tab(r: "TrainingResult", X_data: np.ndarray, feat_names: list[s
         height=max(400, len(top15_feats) * 28),
         **PLOTLY_LAYOUT,
     )
-    st.plotly_chart(fig_bee, use_container_width=True)
+    st.plotly_chart(fig_bee, width='stretch')
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -304,11 +304,11 @@ if task_type in ("binary_classification", "multiclass_classification"):
     tab_val, tab_test = st.tabs(["Validation Set", "Test Set"])
     with tab_val:
         st.caption("Metrics on the validation set during training.")
-        st.dataframe(_build_metrics_df("val"), use_container_width=True, hide_index=True)
+        st.dataframe(_build_metrics_df("val"), width='stretch', hide_index=True)
     with tab_test:
         if test_preds:
             st.caption("Final evaluation on the held-out test set.")
-            st.dataframe(_highlight_best(_build_metrics_df("test")), use_container_width=True, hide_index=True)
+            st.dataframe(_highlight_best(_build_metrics_df("test")), width='stretch', hide_index=True)
         else:
             st.info("No test predictions available.")
 
@@ -341,7 +341,7 @@ if task_type in ("binary_classification", "multiclass_classification"):
                 fig.update_layout(title=r.model_name, xaxis_title="Predicted",
                                   yaxis_title="Actual", **PLOTLY_LAYOUT)
                 with cols_cm[idx % n_cols]:
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
 
         # ROC Curve
         with tab_roc:
@@ -367,7 +367,7 @@ if task_type in ("binary_classification", "multiclass_classification"):
                 fig.update_layout(title="ROC Curves", xaxis_title="FPR",
                                   yaxis_title="TPR", **PLOTLY_LAYOUT)
                 if any_roc:
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 else:
                     st.info("ROC curve requires probability estimates.")
             else:
@@ -391,7 +391,7 @@ if task_type in ("binary_classification", "multiclass_classification"):
                     ))
                     fig.update_layout(title=f"ROC (OVR) — {r.model_name}",
                                       xaxis_title="FPR", yaxis_title="TPR", **PLOTLY_LAYOUT)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
 
         # Precision-Recall Curve (binary only)
         with tab_pr:
@@ -410,7 +410,7 @@ if task_type in ("binary_classification", "multiclass_classification"):
                         ))
                 fig.update_layout(title="Precision-Recall Curve", xaxis_title="Recall",
                                   yaxis_title="Precision", **PLOTLY_LAYOUT)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             else:
                 st.info("Precision-Recall curve is shown for binary classification only.")
 
@@ -434,7 +434,7 @@ if task_type in ("binary_classification", "multiclass_classification"):
                 fig.update_layout(title=f"Feature Importance — {r.model_name}",
                                   xaxis_title="Importance",
                                   yaxis=dict(autorange="reversed"), **PLOTLY_LAYOUT)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             if not has_any:
                 st.info("Feature importance not available for the trained model(s).")
 
@@ -469,7 +469,7 @@ if task_type in ("binary_classification", "multiclass_classification"):
                             fig.update_layout(title=f"Learning Curve — {r.model_name}",
                                               xaxis_title="Training Examples",
                                               yaxis_title="Accuracy", **PLOTLY_LAYOUT)
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, width='stretch')
                         except Exception as e:
                             st.warning(f"Could not compute curve for {r.model_name}: {e}")
 
@@ -511,10 +511,10 @@ elif task_type == "regression":
 
     tab_val, tab_test = st.tabs(["Validation Set", "Test Set"])
     with tab_val:
-        st.dataframe(_build_reg_df("val"), use_container_width=True, hide_index=True)
+        st.dataframe(_build_reg_df("val"), width='stretch', hide_index=True)
     with tab_test:
         if test_preds:
-            st.dataframe(_build_reg_df("test"), use_container_width=True, hide_index=True)
+            st.dataframe(_build_reg_df("test"), width='stretch', hide_index=True)
         else:
             st.info("No test predictions available.")
 
@@ -543,7 +543,7 @@ elif task_type == "regression":
                 fig.update_layout(title=r.model_name, xaxis_title="Predicted",
                                   yaxis_title="Residuals", **PLOTLY_LAYOUT)
                 with cols_res[idx % n_cols]:
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
 
         with tab_avp:
             n_cols = min(len(results), 3)
@@ -565,7 +565,7 @@ elif task_type == "regression":
                 fig.update_layout(title=r.model_name, xaxis_title="Actual",
                                   yaxis_title="Predicted", **PLOTLY_LAYOUT)
                 with cols_avp[idx % n_cols]:
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
 
         with tab_fi:
             n_features = X_train.shape[1]
@@ -585,7 +585,7 @@ elif task_type == "regression":
                 ))
                 fig.update_layout(title=f"Feature Importance — {r.model_name}",
                                   yaxis=dict(autorange="reversed"), **PLOTLY_LAYOUT)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             if not has_any:
                 st.info("Feature importance not available for the trained model(s).")
 
@@ -619,7 +619,7 @@ elif task_type == "regression":
                             fig.update_layout(title=f"Learning Curve — {r.model_name}",
                                               xaxis_title="Training Examples",
                                               yaxis_title="R²", **PLOTLY_LAYOUT)
-                            st.plotly_chart(fig, use_container_width=True)
+                            st.plotly_chart(fig, width='stretch')
                         except Exception as e:
                             st.warning(f"Could not compute curve for {r.model_name}: {e}")
 
@@ -652,7 +652,7 @@ elif task_type == "clustering":
             else:
                 row[k.replace("_", " ").title()] = "—"
         rows.append(row)
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(rows), width='stretch', hide_index=True)
 
     best_result = next((r for r in results if r.model_name == summary["best_model"]), results[0])
     primary = summary["primary_metric"]
@@ -747,7 +747,7 @@ elif task_type == "clustering":
                     xaxis_title="PC1", yaxis_title="PC2",
                     **PLOTLY_LAYOUT,
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             except Exception as e:
                 st.warning(f"Could not render scatter for {r.model_name}: {e}")
 
@@ -762,7 +762,7 @@ elif task_type == "clustering":
                                        marker_color=COLORS[:len(names)]))
                 fig.update_layout(title=f"{metric.replace('_', ' ').title()} by Model",
                                   **PLOTLY_LAYOUT)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
 
     # ── Dendrogram tab ─────────────────────────────────────────────────────
     with tab_dendrogram:
@@ -844,7 +844,7 @@ elif task_type == "clustering":
                         height=500,
                         **PLOTLY_LAYOUT,
                     )
-                    st.plotly_chart(fig_dend, use_container_width=True)
+                    st.plotly_chart(fig_dend, width='stretch')
                     st.caption(
                         f"Linkage method: **{linkage_method}**. "
                         f"Showing {n_dendro} randomly sampled data points."
@@ -926,7 +926,7 @@ elif task_type == "clustering":
                     xaxis=dict(tickmode="linear", dtick=1),
                     **PLOTLY_LAYOUT,
                 )
-                st.plotly_chart(fig_inertia, use_container_width=True)
+                st.plotly_chart(fig_inertia, width='stretch')
 
             with col_e2:
                 fig_sil = go.Figure()
@@ -950,7 +950,7 @@ elif task_type == "clustering":
                     xaxis=dict(tickmode="linear", dtick=1),
                     **PLOTLY_LAYOUT,
                 )
-                st.plotly_chart(fig_sil, use_container_width=True)
+                st.plotly_chart(fig_sil, width='stretch')
 
             st.caption(
                 f"Best K by silhouette: **{best_k_silhouette}** "
@@ -975,7 +975,7 @@ elif task_type == "anomaly_detection":
             else:
                 row[k.replace("_", " ").title()] = "—"
         rows.append(row)
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(rows), width='stretch', hide_index=True)
 
     st.success(
         f"**Best model:** {summary['best_model']} — "
@@ -1009,7 +1009,7 @@ elif task_type == "anomaly_detection":
                         yaxis_title="Count",
                         **PLOTLY_LAYOUT,
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                     n_anomalies = int(preds.sum())
                     st.caption(
                         f"{r.model_name}: {n_anomalies} anomalies detected "
@@ -1033,7 +1033,7 @@ elif task_type == "anomaly_detection":
                     df_top.insert(0, "Anomaly Score", scores[top_idx].round(4))
                     df_top.insert(0, "Row Index", top_idx)
                     st.write(f"**{r.model_name} — Top {top_n} Anomalies:**")
-                    st.dataframe(df_top, use_container_width=True, hide_index=True)
+                    st.dataframe(df_top, width='stretch', hide_index=True)
             except Exception as e:
                 st.warning(f"Could not render table for {r.model_name}: {e}")
 
@@ -1053,7 +1053,7 @@ elif task_type == "dimensionality_reduction":
             else:
                 row[k.replace("_", " ").title()] = "—"
         rows.append(row)
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    st.dataframe(pd.DataFrame(rows), width='stretch', hide_index=True)
 
     st.success(
         f"**Best model:** {summary['best_model']} — "
@@ -1081,7 +1081,7 @@ elif task_type == "dimensionality_reduction":
                         xaxis_title="Component 1", yaxis_title="Component 2",
                         **PLOTLY_LAYOUT,
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
             except NotImplementedError:
                 st.info(f"t-SNE: 2D projection shown from training fit. New data projection not supported.")
                 # Try stored reduction output
@@ -1093,7 +1093,7 @@ elif task_type == "dimensionality_reduction":
                     ))
                     fig.update_layout(title=f"2D Projection — {r.model_name} (training data)",
                                       xaxis_title="Dim 1", yaxis_title="Dim 2", **PLOTLY_LAYOUT)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
             except Exception as e:
                 st.warning(f"Could not render scatter for {r.model_name}: {e}")
 
@@ -1115,7 +1115,7 @@ elif task_type == "dimensionality_reduction":
                         scene=dict(xaxis_title="C1", yaxis_title="C2", zaxis_title="C3"),
                         **PLOTLY_LAYOUT,
                     )
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width='stretch')
                 else:
                     st.info(f"{r.model_name}: only 2 components — 3D plot unavailable.")
             except (NotImplementedError, Exception) as e:
@@ -1146,7 +1146,7 @@ elif task_type == "dimensionality_reduction":
                     xaxis_title="Component", yaxis_title="Explained Variance Ratio",
                     **PLOTLY_LAYOUT,
                 )
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
             else:
                 st.info(f"Explained variance ratio not available for {r.model_name} ({r.model_type}).")
 
@@ -1219,7 +1219,7 @@ else:
         filtered = filtered[filtered["Run Name"].str.contains(name_filter, case=False, na=False)]
     if status_filter != "All":
         filtered = filtered[filtered["Status"] == status_filter]
-    st.dataframe(filtered, use_container_width=True, hide_index=True)
+    st.dataframe(filtered, width='stretch', hide_index=True)
     st.caption(f"Showing {len(filtered)} of {len(mlflow_df)} runs.")
 
 # ══════════════════════════════════════════════════════════════════════════════

@@ -138,7 +138,7 @@ with st.expander("📊 Data Quality Diagnostics", expanded=False):
             height=max(250, len(missing_ratio) * 28),
             margin=dict(l=10, r=40, t=20, b=30),
         )
-        st.plotly_chart(fig_missing, use_container_width=True)
+        st.plotly_chart(fig_missing, width='stretch')
         high_missing_count = int((missing_ratio > 0.20).sum())
         st.metric("Columns with >20% missing", high_missing_count)
 
@@ -197,7 +197,7 @@ with st.expander("📊 Data Quality Diagnostics", expanded=False):
                 "Outlier %": f"{n_outliers / len(series) * 100:.2f}%",
             })
     if outlier_rows:
-        st.dataframe(pd.DataFrame(outlier_rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(outlier_rows), width='stretch', hide_index=True)
     else:
         st.success("No outliers detected in any numerical column.")
 
@@ -265,7 +265,7 @@ with st.expander("High-Correlation Filter", expanded=False):
             margin=dict(l=10, r=10, t=20, b=10),
             xaxis=dict(tickangle=-45),
         )
-        st.plotly_chart(fig_corr, use_container_width=True)
+        st.plotly_chart(fig_corr, width='stretch')
         feat_corr_cols = [c for c in num_cols_corr if c != target_column]
         if len(feat_corr_cols) >= 2:
             corr_abs = df[feat_corr_cols].corr().abs()
@@ -674,7 +674,7 @@ if "preprocessing_summary" in st.session_state:
     tab_before, tab_after = st.tabs(["Raw Data", "Processed Data"])
 
     with tab_before:
-        st.dataframe(df.head(20), use_container_width=True)
+        st.dataframe(df.head(20), width='stretch')
 
     with tab_after:
         X_train_t = st.session_state["X_train"]
@@ -682,7 +682,7 @@ if "preprocessing_summary" in st.session_state:
         processed_preview = pd.DataFrame(
             X_train_t[:20], columns=feature_names,
         )
-        st.dataframe(processed_preview, use_container_width=True)
+        st.dataframe(processed_preview, width='stretch')
 
     # Split sizes and DVC status
     st.subheader("Split Details")

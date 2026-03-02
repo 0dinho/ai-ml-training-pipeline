@@ -733,7 +733,7 @@ if "training_results" in st.session_state:
 
     # Metrics comparison table
     comparison_df = pd.DataFrame(summary["comparison"])
-    st.dataframe(comparison_df, use_container_width=True, hide_index=True)
+    st.dataframe(comparison_df, width='stretch', hide_index=True)
 
     # Best model callout
     st.success(
