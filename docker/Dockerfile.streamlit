@@ -8,15 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY requirements.txt .
 
-# Install PyTorch CPU-only first to keep the image lean (~200 MB vs ~2 GB with CUDA).
-# The subsequent -r requirements.txt install skips torch since the constraint is satisfied.
-RUN pip install --no-cache-dir torch \
-        --index-url https://download.pytorch.org/whl/cpu
-
-# Install remaining dependencies:
-#   umap-learn  — UMAP dimensionality reduction
-#   shap        — SHAP feature-importance explanations
-#   and all other packages from requirements.txt
+# Install all dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app.py .

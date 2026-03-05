@@ -5,7 +5,6 @@ Supported algorithms:
     one_class_svm         — OneClassSVM
     local_outlier_factor  — LocalOutlierFactor (novelty=True for predict on new data)
     elliptic_envelope     — EllipticEnvelope
-    autoencoder           — PyTorch MLP Autoencoder (reconstruction-error threshold)
 
 All adapters normalise to 0=normal / 1=anomaly.
 """
@@ -22,7 +21,6 @@ ANOMALY_MODELS: dict[str, str] = {
     "one_class_svm": "One-Class SVM",
     "local_outlier_factor": "Local Outlier Factor",
     "elliptic_envelope": "Elliptic Envelope",
-    "autoencoder": "Autoencoder (PyTorch)",
 }
 
 
@@ -62,12 +60,8 @@ class AnomalyAdapter(BaseEstimator):
 
         # Record training anomaly ratio
         raw_preds = self._inner.predict(X)
-        if self.algorithm == "autoencoder":
-            # Autoencoder already returns 0/1
-            self.anomaly_ratio_train_: float = float(np.mean(raw_preds))
-        else:
-            anomaly_mask = raw_preds == -1
-            self.anomaly_ratio_train_: float = float(np.mean(anomaly_mask))
+        anomaly_mask = raw_preds == -1
+        self.anomaly_ratio_train_: float = float(np.mean(anomaly_mask))
 
         return self
 
@@ -75,8 +69,6 @@ class AnomalyAdapter(BaseEstimator):
         """Return 0 (normal) / 1 (anomaly) integer array."""
         self._check_fitted()
         raw = self._inner.predict(X)
-        if self.algorithm == "autoencoder":
-            return raw.astype(int)
         return _normalise_predictions(raw)
 
     def fit_predict(self, X: np.ndarray, y: None = None) -> np.ndarray:
@@ -108,112 +100,11 @@ class AnomalyAdapter(BaseEstimator):
 # ---------------------------------------------------------------------------
 
 
-class _TorchAutoencoder:
-    """Minimal PyTorch MLP autoencoder for anomaly detection.
-
-    Anomaly score = mean squared reconstruction error per sample.
-    predict() returns 1 (anomaly) if score > threshold_, else 0 (normal).
-    threshold_ is set to the (1 - contamination) quantile of training scores.
-    """
-
-    def __init__(
-        self,
-        hidden_dim: int = 32,
-        latent_dim: int = 8,
-        epochs: int = 50,
-        lr: float = 1e-3,
-        batch_size: int = 64,
-        contamination: float = 0.05,
-    ) -> None:
-        self.hidden_dim = hidden_dim
-        self.latent_dim = latent_dim
-        self.epochs = epochs
-        self.lr = lr
-        self.batch_size = batch_size
-        self.contamination = contamination
-        self.threshold_: float = 0.0
-        self._net = None
-
-    def fit(self, X: np.ndarray) -> "_TorchAutoencoder":
-        try:
-            import torch
-            import torch.nn as nn
-            from torch.utils.data import DataLoader, TensorDataset
-        except ImportError:
-            raise ImportError(
-                "PyTorch is required for the Autoencoder. "
-                "Install it with: pip install torch"
-            )
-
-        n_features = X.shape[1]
-        X_t = torch.tensor(X, dtype=torch.float32)
-
-        net = nn.Sequential(
-            nn.Linear(n_features, self.hidden_dim),
-            nn.ReLU(),
-            nn.Linear(self.hidden_dim, self.latent_dim),
-            nn.ReLU(),
-            nn.Linear(self.latent_dim, self.hidden_dim),
-            nn.ReLU(),
-            nn.Linear(self.hidden_dim, n_features),
-        )
-        optimizer = torch.optim.Adam(net.parameters(), lr=self.lr)
-        criterion = nn.MSELoss(reduction="none")
-        dataset = TensorDataset(X_t)
-        loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
-
-        net.train()
-        for _ in range(self.epochs):
-            for (batch,) in loader:
-                recon = net(batch)
-                loss = criterion(recon, batch).mean()
-                optimizer.zero_grad()
-                loss.backward()
-                optimizer.step()
-
-        net.eval()
-        self._net = net
-
-        # Set threshold at (1 - contamination) quantile of training scores
-        with torch.no_grad():
-            recon_all = net(X_t)
-            scores = criterion(recon_all, X_t).mean(dim=1).numpy()
-        self.threshold_ = float(np.quantile(scores, 1.0 - self.contamination))
-        self._train_scores = scores
-        return self
-
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        scores = self._scores(X)
-        return (scores > self.threshold_).astype(int)
-
-    def decision_function(self, X: np.ndarray) -> np.ndarray:
-        """Return reconstruction error (higher = more anomalous)."""
-        return self._scores(X)
-
-    def _scores(self, X: np.ndarray) -> np.ndarray:
-        try:
-            import torch
-            import torch.nn as nn
-        except ImportError:
-            raise ImportError("PyTorch is required for the Autoencoder.")
-        if self._net is None:
-            raise RuntimeError("Autoencoder must be fitted first.")
-        X_t = torch.tensor(X, dtype=torch.float32)
-        criterion = nn.MSELoss(reduction="none")
-        self._net.eval()
-        with torch.no_grad():
-            recon = self._net(X_t)
-            scores = criterion(recon, X_t).mean(dim=1).numpy()
-        return scores
-
-
 def _make_inner(algorithm: str, params: dict[str, Any]) -> Any:
     defaults = get_default_anomaly_params(algorithm)
     merged = {**defaults, **params}
 
-    if algorithm == "autoencoder":
-        return _TorchAutoencoder(**merged)
-    elif algorithm == "isolation_forest":
+    if algorithm == "isolation_forest":
         from sklearn.ensemble import IsolationForest
 
         return IsolationForest(**merged, random_state=42)
@@ -246,14 +137,6 @@ def get_default_anomaly_params(algorithm: str) -> dict[str, Any]:
         "one_class_svm": {"nu": 0.1, "kernel": "rbf", "gamma": "scale"},
         "local_outlier_factor": {"n_neighbors": 20, "contamination": "auto"},
         "elliptic_envelope": {"contamination": 0.1},
-        "autoencoder": {
-            "hidden_dim": 32,
-            "latent_dim": 8,
-            "epochs": 50,
-            "lr": 1e-3,
-            "batch_size": 64,
-            "contamination": 0.05,
-        },
     }
     return defaults.get(algorithm, {})
 
@@ -278,12 +161,4 @@ def get_anomaly_search_space(algorithm: str, trial: Any) -> dict[str, Any]:
         }
     elif algorithm == "elliptic_envelope":
         return {"contamination": trial.suggest_float("contamination", 0.01, 0.4)}
-    elif algorithm == "autoencoder":
-        return {
-            "hidden_dim": trial.suggest_categorical("hidden_dim", [16, 32, 64, 128]),
-            "latent_dim": trial.suggest_categorical("latent_dim", [4, 8, 16]),
-            "epochs": trial.suggest_int("epochs", 20, 100, step=10),
-            "lr": trial.suggest_float("lr", 1e-4, 1e-2, log=True),
-            "contamination": trial.suggest_float("contamination", 0.01, 0.3),
-        }
     return {}

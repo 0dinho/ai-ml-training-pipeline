@@ -210,7 +210,7 @@ def run_retraining(
     Parameters
     ----------
     model_type:
-        One of ``'random_forest'``, ``'xgboost'``, ``'neural_network'``.
+        One of ``'random_forest'``, ``'xgboost'``, etc.
     task_type:
         ``'classification'`` or ``'regression'``.
     params:

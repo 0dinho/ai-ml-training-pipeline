@@ -14,7 +14,6 @@ from src.pipelines.preprocessing import (
 
 from src.pipelines.training import (
     TrainingResult,
-    TorchEstimator,
     compute_metrics,
     create_sklearn_model,
     get_default_params,
@@ -48,7 +47,6 @@ __all__ = [
     "version_with_dvc",
     # Training
     "TrainingResult",
-    "TorchEstimator",
     "compute_metrics",
     "create_sklearn_model",
     "get_default_params",

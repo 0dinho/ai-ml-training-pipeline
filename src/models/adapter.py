@@ -46,7 +46,7 @@ class ModelAdapter:
     Fields
     ------
     model:
-        The fitted estimator: sklearn estimator, XGBoost model, TorchEstimator,
+        The fitted estimator: sklearn estimator, XGBoost model,
         ClusteringAdapter, AnomalyAdapter, or ReductionAdapter.
     task_type:
         One of the 6 canonical task type strings (or legacy "classification").

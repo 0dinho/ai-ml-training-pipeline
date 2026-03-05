@@ -93,17 +93,15 @@ st.header("Model Selection")
 
 # ── Binary / Multiclass Classification ─────────────────────────────────────────
 if task_type in ("binary_classification", "multiclass_classification"):
-    cols = st.columns(5)
+    cols = st.columns(4)
     use_rf  = cols[0].checkbox("Random Forest",      value=True,  key="use_rf")
     use_xgb = cols[1].checkbox("XGBoost",            value=True,  key="use_xgb")
-    use_nn  = cols[2].checkbox("Neural Network",     value=False, key="use_nn")
-    use_lr  = cols[3].checkbox("Logistic Regression",value=False, key="use_lr")
-    use_svm = cols[4].checkbox("SVM",                value=False, key="use_svm")
+    use_lr  = cols[2].checkbox("Logistic Regression",value=False, key="use_lr")
+    use_svm = cols[3].checkbox("SVM",                value=False, key="use_svm")
 
     selected_models: list[str] = []
     if use_rf:  selected_models.append("random_forest")
     if use_xgb: selected_models.append("xgboost")
-    if use_nn:  selected_models.append("neural_network")
     if use_lr:  selected_models.append("logistic_regression")
     if use_svm: selected_models.append("svm")
 
@@ -112,18 +110,16 @@ elif task_type == "regression":
     cols = st.columns(4)
     use_rf  = cols[0].checkbox("Random Forest",    value=True,  key="use_rf")
     use_xgb = cols[1].checkbox("XGBoost",          value=True,  key="use_xgb")
-    use_nn  = cols[2].checkbox("Neural Network",   value=False, key="use_nn")
-    use_lr  = cols[3].checkbox("Linear Regression",value=False, key="use_lr")
+    use_lr  = cols[2].checkbox("Linear Regression",value=False, key="use_lr")
+    use_ridge = cols[3].checkbox("Ridge",          value=False, key="use_ridge")
     cols2 = st.columns(4)
-    use_ridge = cols2[0].checkbox("Ridge",         value=False, key="use_ridge")
-    use_svr   = cols2[1].checkbox("SVR",           value=False, key="use_svr")
-    use_gb    = cols2[2].checkbox("Gradient Boost",value=False, key="use_gb")
-    use_knn   = cols2[3].checkbox("KNN",           value=False, key="use_knn_r")
+    use_svr   = cols2[0].checkbox("SVR",           value=False, key="use_svr")
+    use_gb    = cols2[1].checkbox("Gradient Boost",value=False, key="use_gb")
+    use_knn   = cols2[2].checkbox("KNN",           value=False, key="use_knn_r")
 
     selected_models = []
     if use_rf:    selected_models.append("random_forest")
     if use_xgb:   selected_models.append("xgboost")
-    if use_nn:    selected_models.append("neural_network")
     if use_lr:    selected_models.append("linear_regression")
     if use_ridge: selected_models.append("ridge")
     if use_svr:   selected_models.append("svr")
@@ -148,19 +144,17 @@ elif task_type == "clustering":
 
 # ── Anomaly Detection ─────────────────────────────────────────────────────────
 elif task_type == "anomaly_detection":
-    cols = st.columns(5)
+    cols = st.columns(4)
     use_if  = cols[0].checkbox("Isolation Forest",     value=True,  key="use_iforest")
     use_oc  = cols[1].checkbox("One-Class SVM",        value=False, key="use_ocsvm")
     use_lof = cols[2].checkbox("LOF",                  value=False, key="use_lof")
     use_ee  = cols[3].checkbox("Elliptic Envelope",    value=False, key="use_ee")
-    use_ae  = cols[4].checkbox("Autoencoder (PyTorch)", value=False, key="use_ae")
 
     selected_models = []
     if use_if:  selected_models.append("isolation_forest")
     if use_oc:  selected_models.append("one_class_svm")
     if use_lof: selected_models.append("local_outlier_factor")
     if use_ee:  selected_models.append("elliptic_envelope")
-    if use_ae:  selected_models.append("autoencoder")
 
 # ── Dimensionality Reduction ──────────────────────────────────────────────────
 elif task_type == "dimensionality_reduction":
@@ -265,49 +259,6 @@ if "xgboost" in selected_models:
                     "gamma": xgb_gamma,
                     "reg_alpha": xgb_alpha,
                     "reg_lambda": xgb_lambda,
-                },
-            }
-
-# ── Neural Network ────────────────────────────────────────────────────────────
-if "neural_network" in selected_models:
-    with st.expander("Neural Network", expanded=True):
-        auto_nn = st.toggle("Auto Tune with Optuna", key="auto_nn")
-        if auto_nn:
-            nn_trials  = st.number_input("Optuna trials", 5, 200, 50, key="nn_trials")
-            nn_timeout = st.number_input("Timeout (sec)", 10, 600, 300, key="nn_timeout")
-            model_configs["neural_network"] = {
-                "auto_tune": True, "n_trials": int(nn_trials), "timeout": int(nn_timeout),
-            }
-        else:
-            c1, c2 = st.columns(2)
-            with c1:
-                nn_n_layers = st.slider("Hidden layers", 1, 3, 2, key="nn_n_layers")
-                nn_layers = []
-                for i in range(nn_n_layers):
-                    size = st.slider(
-                        f"Layer {i+1} size", 16, 256, 64 if i == 0 else 32,
-                        step=16, key=f"nn_layer_{i}",
-                    )
-                    nn_layers.append(size)
-                nn_activation = st.selectbox(
-                    "Activation", ["relu", "tanh", "leaky_relu"], key="nn_activation",
-                )
-            with c2:
-                nn_dropout  = st.slider("Dropout", 0.0, 0.5, 0.2, step=0.05, key="nn_dropout")
-                nn_lr       = st.slider("Learning rate", 0.0001, 0.01, 0.001, step=0.0001, format="%.4f", key="nn_lr")
-                nn_batch    = st.selectbox("Batch size", [16, 32, 64, 128], index=1, key="nn_batch")
-                nn_epochs   = st.slider("Epochs", 10, 200, 50, key="nn_epochs")
-                nn_patience = st.slider("Early stopping patience", 3, 20, 5, key="nn_patience")
-            model_configs["neural_network"] = {
-                "auto_tune": False,
-                "params": {
-                    "hidden_layers": nn_layers,
-                    "activation": nn_activation,
-                    "dropout": nn_dropout,
-                    "learning_rate": nn_lr,
-                    "batch_size": nn_batch,
-                    "epochs": nn_epochs,
-                    "early_stopping_patience": nn_patience,
                 },
             }
 
@@ -517,31 +468,6 @@ if "elliptic_envelope" in selected_models:
             "params": {"contamination": ee_cont},
         }
 
-# ── Autoencoder ───────────────────────────────────────────────────────────────
-if "autoencoder" in selected_models:
-    with st.expander("Autoencoder (PyTorch)", expanded=True):
-        st.caption("MLP encoder-decoder. Anomaly = reconstruction error above contamination quantile.")
-        c1, c2 = st.columns(2)
-        with c1:
-            ae_hidden = st.selectbox("hidden_dim", [16, 32, 64, 128], index=1, key="ae_hidden")
-            ae_latent = st.selectbox("latent_dim", [4, 8, 16, 32], index=1, key="ae_latent")
-            ae_epochs = st.slider("epochs", 10, 200, 50, step=10, key="ae_epochs")
-        with c2:
-            ae_lr = st.select_slider("learning_rate", [1e-4, 5e-4, 1e-3, 5e-3, 1e-2], value=1e-3, key="ae_lr")
-            ae_batch = st.selectbox("batch_size", [32, 64, 128, 256], index=1, key="ae_batch")
-            ae_cont = st.slider("contamination", 0.01, 0.4, 0.05, step=0.01, key="ae_cont")
-        model_configs["autoencoder"] = {
-            "auto_tune": False,
-            "params": {
-                "hidden_dim": ae_hidden,
-                "latent_dim": ae_latent,
-                "epochs": ae_epochs,
-                "lr": ae_lr,
-                "batch_size": ae_batch,
-                "contamination": ae_cont,
-            },
-        }
-
 # ── PCA ───────────────────────────────────────────────────────────────────────
 if "pca" in selected_models:
     with st.expander("PCA", expanded=True):
@@ -615,65 +541,68 @@ if st.button("🏋️ Train Models", type="primary"):
 
         st.subheader(f"Training {display_name}")
 
-        # Step 1: Optuna tuning (if enabled — supervised only)
-        if cfg.get("auto_tune") and supervised:
-            st.write("Running Optuna hyperparameter search...")
-            tune_bar = st.progress(0, text="Tuning...")
+        try:
+            # Step 1: Optuna tuning (if enabled — supervised only)
+            if cfg.get("auto_tune") and supervised:
+                st.write("Running Optuna hyperparameter search...")
+                tune_bar = st.progress(0, text="Tuning...")
 
-            def tune_callback(trial_num, total, score):
-                pct = trial_num / total
-                tune_bar.progress(pct, text=f"Trial {trial_num}/{total} — best score: {score:.4f}")
+                def tune_callback(trial_num, total, score):
+                    pct = trial_num / total
+                    tune_bar.progress(pct, text=f"Trial {trial_num}/{total} — best score: {score:.4f}")
 
-            params = run_optuna_tuning(
-                model_type, task_type,
+                params = run_optuna_tuning(
+                    model_type, task_type,
+                    X_train, y_train,
+                    cv_folds=cv_folds,
+                    n_trials=cfg["n_trials"],
+                    timeout=cfg["timeout"],
+                    callback=tune_callback,
+                )
+                tune_bar.progress(1.0, text="Tuning complete!")
+                st.write(f"Best params: `{params}`")
+            else:
+                params = cfg.get("params", get_default_params(model_type, task_type))
+
+            # Step 2: Train model
+            train_bar = st.progress(0, text="Training...")
+
+            result = train_model(
+                model_type, task_type, params,
                 X_train, y_train,
+                X_val if supervised else None,
+                y_val if supervised else None,
                 cv_folds=cv_folds,
-                n_trials=cfg["n_trials"],
-                timeout=cfg["timeout"],
-                callback=tune_callback,
             )
-            tune_bar.progress(1.0, text="Tuning complete!")
-            st.write(f"Best params: `{params}`")
-        else:
-            params = cfg.get("params", get_default_params(model_type, task_type))
+            train_bar.progress(1.0, text="Training complete!")
 
-        # Step 2: Train model
-        train_bar = st.progress(0, text="Training...")
+            # Step 3: Save model artifact
+            artifact_path = save_model(
+                result, task_type=task_type,
+                feature_names=feature_names, target_column=target_column,
+            )
+            st.write(f"Model saved to `{artifact_path}`")
 
-        if model_type == "neural_network":
-            def progress_cb(epoch, total, loss):
-                pct = epoch / total
-                train_bar.progress(pct, text=f"Epoch {epoch}/{total} — loss: {loss:.4f}")
-        else:
-            progress_cb = None
+            # Step 4: MLflow logging (best-effort)
+            run_id = log_to_mlflow(result)
+            if run_id:
+                result.mlflow_run_id = run_id
+                st.write(f"MLflow run: `{run_id}`")
+            else:
+                st.caption("MLflow logging skipped (server unavailable).")
 
-        result = train_model(
-            model_type, task_type, params,
-            X_train, y_train,
-            X_val if supervised else None,
-            y_val if supervised else None,
-            cv_folds=cv_folds,
-            progress_callback=progress_cb,
-        )
-        train_bar.progress(1.0, text="Training complete!")
+            results.append(result)
+            st.success(f"{display_name} training complete!")
 
-        # Step 3: Save model artifact
-        artifact_path = save_model(result, feature_names=feature_names, target_column=target_column)
-        st.write(f"Model saved to `{artifact_path}`")
-
-        # Step 4: MLflow logging (best-effort)
-        run_id = log_to_mlflow(result)
-        if run_id:
-            result.mlflow_run_id = run_id
-            st.write(f"MLflow run: `{run_id}`")
-        else:
-            st.caption("MLflow logging skipped (server unavailable).")
-
-        results.append(result)
-        adapters.append(result.adapter)
-        st.success(f"{display_name} training complete!")
+        except Exception as e:
+            st.error(f"{display_name} failed: {e}")
+            continue
 
     # Step 5: Store in session state
+    if not results:
+        st.error("All models failed to train. Check the errors above.")
+        st.stop()
+
     st.session_state["training_results"] = results
     st.session_state["trained_models"] = {r.model_type: r.model for r in results}
     summary = get_training_summary(results)

@@ -10,7 +10,6 @@ import pytest
 
 from src.pipelines.training import (
     TrainingResult,
-    TorchEstimator,
     compute_metrics,
     create_sklearn_model,
     get_default_params,
@@ -113,13 +112,6 @@ class TestGetDefaultParams:
         assert "colsample_bytree" in params
         assert "gamma" in params
 
-    def test_neural_network(self):
-        params = get_default_params("neural_network", "classification")
-        assert "hidden_layers" in params
-        assert "activation" in params
-        assert "dropout" in params
-        assert "epochs" in params
-
     def test_unknown_model_type_raises(self):
         with pytest.raises(ValueError, match="Unknown model_type"):
             get_default_params("unknown", "classification")
@@ -158,12 +150,6 @@ class TestCreateSklearnModel:
         params = get_default_params("xgboost", "regression")
         model = create_sklearn_model("xgboost", "regression", params)
         assert isinstance(model, xgb.XGBRegressor)
-
-    def test_neural_network(self):
-        params = get_default_params("neural_network", "classification")
-        model = create_sklearn_model("neural_network", "classification", params)
-        assert isinstance(model, TorchEstimator)
-        assert model.task_type == "classification"
 
     def test_unknown_raises(self):
         with pytest.raises(ValueError):
@@ -325,134 +311,6 @@ class TestTrainModel:
         assert result.cv_mean is not None
         assert result.cv_std is not None
 
-    def test_progress_callback(self, classification_data):
-        """Neural network progress_callback is invoked during training."""
-        params = get_default_params("neural_network", "classification")
-        params["epochs"] = 5
-        params["hidden_layers"] = [8, 4]
-
-        calls = []
-        def cb(epoch, total, loss):
-            calls.append((epoch, total, loss))
-
-        result = train_model(
-            "neural_network", "classification", params,
-            classification_data["X_train"], classification_data["y_train"],
-            classification_data["X_val"], classification_data["y_val"],
-            cv_folds=2,
-            progress_callback=cb,
-        )
-        assert len(calls) > 0
-        assert isinstance(result, TrainingResult)
-
-
-# ---------------------------------------------------------------------------
-# TestTorchEstimator
-# ---------------------------------------------------------------------------
-
-class TestTorchEstimator:
-    def test_fit_predict_classification(self, classification_data):
-        est = TorchEstimator(
-            task_type="classification",
-            hidden_layers=[8, 4],
-            epochs=5,
-        )
-        est.fit(classification_data["X_train"], classification_data["y_train"])
-        preds = est.predict(classification_data["X_val"])
-        assert len(preds) == len(classification_data["y_val"])
-        assert set(preds).issubset({"A", "B"})
-
-    def test_fit_predict_regression(self, regression_data):
-        est = TorchEstimator(
-            task_type="regression",
-            hidden_layers=[8, 4],
-            epochs=5,
-        )
-        est.fit(regression_data["X_train"], regression_data["y_train"])
-        preds = est.predict(regression_data["X_val"])
-        assert len(preds) == len(regression_data["y_val"])
-        assert preds.dtype == np.float32 or preds.dtype == np.float64
-
-    def test_predict_proba(self, classification_data):
-        est = TorchEstimator(
-            task_type="classification",
-            hidden_layers=[8, 4],
-            epochs=5,
-        )
-        est.fit(classification_data["X_train"], classification_data["y_train"])
-        proba = est.predict_proba(classification_data["X_val"])
-        assert proba.shape == (len(classification_data["X_val"]), 2)
-        # Probabilities sum to 1
-        np.testing.assert_allclose(proba.sum(axis=1), 1.0, atol=1e-5)
-
-    def test_predict_proba_regression_raises(self, regression_data):
-        est = TorchEstimator(
-            task_type="regression",
-            hidden_layers=[8, 4],
-            epochs=5,
-        )
-        est.fit(regression_data["X_train"], regression_data["y_train"])
-        with pytest.raises(ValueError, match="predict_proba"):
-            est.predict_proba(regression_data["X_val"])
-
-    def test_score(self, classification_data):
-        est = TorchEstimator(
-            task_type="classification",
-            hidden_layers=[8, 4],
-            epochs=5,
-        )
-        est.fit(classification_data["X_train"], classification_data["y_train"])
-        score = est.score(classification_data["X_val"], classification_data["y_val"])
-        assert 0 <= score <= 1
-
-    def test_get_set_params(self):
-        est = TorchEstimator(hidden_layers=[16], dropout=0.1)
-        params = est.get_params()
-        assert params["hidden_layers"] == [16]
-        assert params["dropout"] == 0.1
-
-        est.set_params(dropout=0.3)
-        assert est.dropout == 0.3
-
-    def test_early_stopping(self, classification_data):
-        est = TorchEstimator(
-            task_type="classification",
-            hidden_layers=[8, 4],
-            epochs=200,
-            early_stopping_patience=3,
-        )
-        est.fit(
-            classification_data["X_train"], classification_data["y_train"],
-            X_val=classification_data["X_val"], y_val=classification_data["y_val"],
-        )
-        # Should have stopped before 200 epochs
-        preds = est.predict(classification_data["X_val"])
-        assert len(preds) == len(classification_data["y_val"])
-
-    def test_multiclass(self, multiclass_data):
-        est = TorchEstimator(
-            task_type="classification",
-            hidden_layers=[8, 4],
-            epochs=5,
-        )
-        est.fit(multiclass_data["X_train"], multiclass_data["y_train"])
-        preds = est.predict(multiclass_data["X_val"])
-        assert set(preds).issubset({"cat", "dog", "fish"})
-        proba = est.predict_proba(multiclass_data["X_val"])
-        assert proba.shape[1] == 3
-
-    def test_clone_and_refit(self, classification_data):
-        from sklearn.base import clone
-        est = TorchEstimator(
-            task_type="classification",
-            hidden_layers=[8, 4],
-            epochs=5,
-        )
-        est.fit(classification_data["X_train"], classification_data["y_train"])
-        est2 = clone(est)
-        est2.fit(classification_data["X_train"], classification_data["y_train"])
-        preds = est2.predict(classification_data["X_val"])
-        assert len(preds) == len(classification_data["y_val"])
 
 
 # ---------------------------------------------------------------------------
@@ -477,15 +335,6 @@ class TestRunOptunaTuning:
         )
         assert "learning_rate" in best_params
         assert "subsample" in best_params
-
-    def test_nn_tuning(self, classification_data):
-        best_params = run_optuna_tuning(
-            "neural_network", "classification",
-            classification_data["X_train"], classification_data["y_train"],
-            cv_folds=2, n_trials=3, timeout=30,
-        )
-        assert "hidden_layers" in best_params
-        assert "activation" in best_params
 
     def test_callback_called(self, classification_data):
         calls = []
@@ -548,29 +397,13 @@ class TestSaveLoadModel:
     def test_save_xgboost_model(self, classification_data):
         import xgboost as xgb
         model = xgb.XGBClassifier(n_estimators=10, random_state=42,
-                                   eval_metric="logloss", use_label_encoder=False)
+                                   eval_metric="logloss")
         model.fit(classification_data["X_train"], classification_data["y_train"])
 
         result = _make_training_result(model_type="xgboost", model=model)
         with tempfile.TemporaryDirectory() as tmpdir:
             path = save_model(result, artifact_dir=tmpdir)
             loaded = load_model(path)
-            preds = loaded.predict(classification_data["X_val"])
-            assert len(preds) == len(classification_data["X_val"])
-
-    def test_save_neural_network_model(self, classification_data):
-        est = TorchEstimator(
-            task_type="classification",
-            hidden_layers=[8, 4],
-            epochs=5,
-        )
-        est.fit(classification_data["X_train"], classification_data["y_train"])
-
-        result = _make_training_result(model_type="neural_network", model=est)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = save_model(result, artifact_dir=tmpdir)
-            loaded = load_model(path)
-            assert isinstance(loaded, TorchEstimator)
             preds = loaded.predict(classification_data["X_val"])
             assert len(preds) == len(classification_data["X_val"])
 

@@ -5,7 +5,7 @@ so the Streamlit monitoring page can surface the last run outcome.
 
 Configuration via environment variables
 ----------------------------------------
-RETRAIN_MODEL_TYPE      Model to retrain: random_forest | xgboost | neural_network
+RETRAIN_MODEL_TYPE      Model to retrain: random_forest | xgboost
                         Default: random_forest
 RETRAIN_TASK_TYPE       Task type: classification | regression
                         Default: classification

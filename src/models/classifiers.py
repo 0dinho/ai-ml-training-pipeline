@@ -1,8 +1,8 @@
 """Classification model factory functions.
 
 Returns unfitted sklearn-compatible estimators for binary and multiclass
-classification tasks. RF, XGBoost, and NeuralNet (TorchEstimator) remain in
-training.py for backward compatibility; this module adds new model types.
+classification tasks. RF and XGBoost remain in training.py for backward
+compatibility; this module adds new model types.
 """
 
 from __future__ import annotations
@@ -14,7 +14,6 @@ from sklearn.base import BaseEstimator
 CLASSIFICATION_MODELS: dict[str, str] = {
     "random_forest": "Random Forest",
     "xgboost": "XGBoost",
-    "neural_network": "Neural Network",
     "logistic_regression": "Logistic Regression",
     "naive_bayes_gaussian": "Gaussian Naive Bayes",
     "naive_bayes_bernoulli": "Bernoulli Naive Bayes",
@@ -22,7 +21,6 @@ CLASSIFICATION_MODELS: dict[str, str] = {
     "svm_linear": "Support Vector Machine (Linear)",
     "decision_tree": "Decision Tree",
     "knn": "k-Nearest Neighbours",
-    "mlp": "MLP Classifier",
 }
 
 
@@ -95,12 +93,6 @@ def get_classification_model(
         defaults = get_default_classification_params("knn")
         return KNeighborsClassifier(**{**defaults, **params})
 
-    elif model_type == "mlp":
-        from sklearn.neural_network import MLPClassifier
-
-        defaults = get_default_classification_params("mlp")
-        return MLPClassifier(**{**defaults, **params}, random_state=42)
-
     else:
         raise ValueError(f"Unknown classification model_type: {model_type!r}")
 
@@ -114,12 +106,6 @@ def get_default_classification_params(model_type: str) -> dict[str, Any]:
         "svm_linear": {"C": 1.0, "max_iter": 2000},
         "decision_tree": {"max_depth": None, "min_samples_split": 2, "min_samples_leaf": 1},
         "knn": {"n_neighbors": 5, "metric": "minkowski", "weights": "uniform"},
-        "mlp": {
-            "hidden_layer_sizes": (100,),
-            "activation": "relu",
-            "learning_rate_init": 0.001,
-            "max_iter": 200,
-        },
     }
     return defaults.get(model_type, {})
 
@@ -146,15 +132,5 @@ def get_classification_search_space(model_type: str, trial: Any) -> dict[str, An
         return {
             "n_neighbors": trial.suggest_int("n_neighbors", 1, 30),
             "weights": trial.suggest_categorical("weights", ["uniform", "distance"]),
-        }
-    elif model_type == "mlp":
-        n_layers = trial.suggest_int("n_layers", 1, 3)
-        sizes = tuple(
-            trial.suggest_int(f"n_units_{i}", 32, 256) for i in range(n_layers)
-        )
-        return {
-            "hidden_layer_sizes": sizes,
-            "activation": trial.suggest_categorical("activation", ["relu", "tanh"]),
-            "learning_rate_init": trial.suggest_float("learning_rate_init", 1e-4, 1e-2, log=True),
         }
     return {}

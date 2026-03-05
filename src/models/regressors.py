@@ -1,7 +1,7 @@
 """Regression model factory functions.
 
 Returns unfitted sklearn-compatible estimators for regression tasks.
-RF, XGBoost, and NeuralNet remain in training.py for backward compatibility;
+RF and XGBoost remain in training.py for backward compatibility;
 this module adds the remaining model types.
 """
 
@@ -14,7 +14,6 @@ from sklearn.base import BaseEstimator
 REGRESSION_MODELS: dict[str, str] = {
     "random_forest": "Random Forest",
     "xgboost": "XGBoost",
-    "neural_network": "Neural Network",
     "linear_regression": "Linear Regression",
     "ridge": "Ridge Regression",
     "lasso": "Lasso Regression",
@@ -23,7 +22,6 @@ REGRESSION_MODELS: dict[str, str] = {
     "svr": "Support Vector Regressor (RBF)",
     "knn": "k-Nearest Neighbours Regressor",
     "gradient_boosting": "Gradient Boosting",
-    "mlp": "MLP Regressor",
 }
 
 
@@ -79,12 +77,6 @@ def get_regression_model(
         defaults = get_default_regression_params("gradient_boosting")
         return GradientBoostingRegressor(**{**defaults, **params}, random_state=42)
 
-    elif model_type == "mlp":
-        from sklearn.neural_network import MLPRegressor
-
-        defaults = get_default_regression_params("mlp")
-        return MLPRegressor(**{**defaults, **params}, random_state=42)
-
     else:
         raise ValueError(f"Unknown regression model_type: {model_type!r}")
 
@@ -103,12 +95,6 @@ def get_default_regression_params(model_type: str) -> dict[str, Any]:
             "max_depth": 3,
             "learning_rate": 0.1,
             "subsample": 0.8,
-        },
-        "mlp": {
-            "hidden_layer_sizes": (100,),
-            "activation": "relu",
-            "learning_rate_init": 0.001,
-            "max_iter": 200,
         },
     }
     return defaults.get(model_type, {})
@@ -147,14 +133,5 @@ def get_regression_search_space(model_type: str, trial: Any) -> dict[str, Any]:
         return {
             "max_depth": trial.suggest_int("max_depth", 2, 20),
             "min_samples_split": trial.suggest_int("min_samples_split", 2, 20),
-        }
-    elif model_type == "mlp":
-        n_layers = trial.suggest_int("n_layers", 1, 3)
-        sizes = tuple(
-            trial.suggest_int(f"n_units_{i}", 32, 256) for i in range(n_layers)
-        )
-        return {
-            "hidden_layer_sizes": sizes,
-            "learning_rate_init": trial.suggest_float("learning_rate_init", 1e-4, 1e-2, log=True),
         }
     return {}

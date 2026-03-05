@@ -17,7 +17,7 @@ from typing import Any, Callable
 
 import joblib
 import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, clone
+from sklearn.base import BaseEstimator, clone
 from sklearn.model_selection import StratifiedKFold, KFold, cross_val_score
 
 
@@ -59,8 +59,8 @@ def is_supervised(task_type: str) -> bool:
 class TrainingResult:
     """Container for a single model's training outcome."""
 
-    model_name: str  # "Random Forest", "XGBoost", "Neural Network"
-    model_type: str  # "random_forest", "xgboost", "neural_network"
+    model_name: str  # "Random Forest", "XGBoost", etc.
+    model_type: str  # "random_forest", "xgboost", etc.
     model: Any  # fitted estimator
     params: dict[str, Any]  # final hyperparams
     metrics: dict[str, float]  # validation metrics
@@ -73,11 +73,9 @@ class TrainingResult:
 
 
 MODEL_DISPLAY_NAMES: dict[str, str] = {
-    # Supervised — existing
+    # Supervised — classification
     "random_forest": "Random Forest",
     "xgboost": "XGBoost",
-    "neural_network": "Neural Network",
-    # Supervised — new classification
     "logistic_regression": "Logistic Regression",
     "naive_bayes_gaussian": "Gaussian Naive Bayes",
     "naive_bayes_bernoulli": "Bernoulli Naive Bayes",
@@ -85,8 +83,7 @@ MODEL_DISPLAY_NAMES: dict[str, str] = {
     "svm_linear": "SVM (Linear)",
     "decision_tree": "Decision Tree",
     "knn": "k-Nearest Neighbours",
-    "mlp": "MLP",
-    # Supervised — new regression
+    # Supervised — regression
     "linear_regression": "Linear Regression",
     "ridge": "Ridge Regression",
     "lasso": "Lasso Regression",
@@ -103,7 +100,6 @@ MODEL_DISPLAY_NAMES: dict[str, str] = {
     "isolation_forest": "Isolation Forest",
     "one_class_svm": "One-Class SVM",
     "local_outlier_factor": "Local Outlier Factor",
-    "autoencoder": "Autoencoder (PyTorch)",
     "elliptic_envelope": "Elliptic Envelope",
     # Unsupervised — dimensionality reduction
     "pca": "PCA",
@@ -117,14 +113,14 @@ CLUSTERING_MODEL_TYPES = {"kmeans", "dbscan", "agglomerative", "gaussian_mixture
 ANOMALY_MODEL_TYPES = {"isolation_forest", "one_class_svm", "local_outlier_factor", "elliptic_envelope"}
 REDUCTION_MODEL_TYPES = {"pca", "umap", "tsne", "truncated_svd"}
 CLASSIFICATION_MODEL_TYPES = {
-    "random_forest", "xgboost", "neural_network", "logistic_regression",
+    "random_forest", "xgboost", "logistic_regression",
     "naive_bayes_gaussian", "naive_bayes_bernoulli", "svm", "svm_linear",
-    "decision_tree", "knn", "mlp",
+    "decision_tree", "knn",
 }
 REGRESSION_MODEL_TYPES = {
-    "random_forest", "xgboost", "neural_network", "linear_regression",
+    "random_forest", "xgboost", "linear_regression",
     "ridge", "lasso", "elastic_net", "decision_tree", "svr", "knn",
-    "gradient_boosting", "mlp",
+    "gradient_boosting",
 }
 
 
@@ -157,18 +153,7 @@ def get_default_params(model_type: str, task_type: str) -> dict[str, Any]:
             "reg_alpha": 0.0,
             "reg_lambda": 1.0,
         }
-    elif model_type == "neural_network":
-        return {
-            "hidden_layers": [64, 32],
-            "activation": "relu",
-            "dropout": 0.2,
-            "learning_rate": 0.001,
-            "batch_size": 32,
-            "epochs": 50,
-            "early_stopping_patience": 5,
-        }
-
-    # ── New classification models ───────────────────────────────────────
+    # ── Classification models ──────────────────────────────────────────
     elif model_type in CLASSIFICATION_MODEL_TYPES:
         from src.models.classifiers import get_default_classification_params
         return get_default_classification_params(model_type)
@@ -227,32 +212,12 @@ def get_search_space(model_type: str, trial: Any) -> dict[str, Any]:
             "reg_alpha": trial.suggest_float("reg_alpha", 0.0, 10.0),
             "reg_lambda": trial.suggest_float("reg_lambda", 0.0, 10.0),
         }
-    elif model_type == "neural_network":
-        n_layers = trial.suggest_int("n_layers", 1, 3)
-        hidden_layers = [
-            trial.suggest_int(f"layer_{i}_size", 16, 256, step=16)
-            for i in range(n_layers)
-        ]
-        return {
-            "hidden_layers": hidden_layers,
-            "activation": trial.suggest_categorical(
-                "activation", ["relu", "tanh", "leaky_relu"],
-            ),
-            "dropout": trial.suggest_float("dropout", 0.0, 0.5),
-            "learning_rate": trial.suggest_float(
-                "learning_rate", 1e-4, 1e-2, log=True,
-            ),
-            "batch_size": trial.suggest_categorical("batch_size", [16, 32, 64, 128]),
-            "epochs": 50,  # fixed during tuning; early stopping handles it
-            "early_stopping_patience": 5,
-        }
-
-    # ── New supervised models ────────────────────────────────────────────
-    elif model_type in CLASSIFICATION_MODEL_TYPES - {"random_forest", "xgboost", "neural_network"}:
+    # ── Classification models ────────────────────────────────────────────
+    elif model_type in CLASSIFICATION_MODEL_TYPES - {"random_forest", "xgboost"}:
         from src.models.classifiers import get_classification_search_space
         return get_classification_search_space(model_type, trial)
 
-    elif model_type in REGRESSION_MODEL_TYPES - {"random_forest", "xgboost", "neural_network"}:
+    elif model_type in REGRESSION_MODEL_TYPES - {"random_forest", "xgboost"}:
         from src.models.regressors import get_regression_search_space
         return get_regression_search_space(model_type, trial)
 
@@ -271,218 +236,6 @@ def get_search_space(model_type: str, trial: Any) -> dict[str, Any]:
 
     else:
         return {}
-
-
-# ---------------------------------------------------------------------------
-# TorchEstimator — sklearn-compatible neural network wrapper
-# ---------------------------------------------------------------------------
-
-class TorchEstimator(BaseEstimator):
-    """Sklearn-compatible wrapper around a PyTorch feedforward network.
-
-    Works with ``cross_val_score``, ``clone``, and joblib serialisation.
-    Automatically uses CUDA when available.
-    """
-
-    def __init__(
-        self,
-        task_type: str = "classification",
-        hidden_layers: list[int] | None = None,
-        activation: str = "relu",
-        dropout: float = 0.2,
-        learning_rate: float = 0.001,
-        batch_size: int = 32,
-        epochs: int = 50,
-        early_stopping_patience: int = 5,
-    ):
-        self.task_type = task_type
-        self.hidden_layers = hidden_layers if hidden_layers is not None else [64, 32]
-        self.activation = activation
-        self.dropout = dropout
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
-        self.epochs = epochs
-        self.early_stopping_patience = early_stopping_patience
-
-    # ---- internal helpers ------------------------------------------------
-
-    def _get_device(self):
-        import torch
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    def _get_activation(self):
-        import torch.nn as nn
-        return {
-            "relu": nn.ReLU,
-            "tanh": nn.Tanh,
-            "leaky_relu": nn.LeakyReLU,
-        }[self.activation]
-
-    def _build_network(self, input_dim: int, output_dim: int):
-        import torch.nn as nn
-
-        layers: list[nn.Module] = []
-        in_features = input_dim
-        act_cls = self._get_activation()
-
-        for h in self.hidden_layers:
-            layers.append(nn.Linear(in_features, h))
-            layers.append(act_cls())
-            if self.dropout > 0:
-                layers.append(nn.Dropout(self.dropout))
-            in_features = h
-
-        layers.append(nn.Linear(in_features, output_dim))
-        return nn.Sequential(*layers)
-
-    # ---- sklearn API -----------------------------------------------------
-
-    def fit(
-        self,
-        X: np.ndarray,
-        y: np.ndarray,
-        X_val: np.ndarray | None = None,
-        y_val: np.ndarray | None = None,
-        progress_callback: Callable[[int, int, float], None] | None = None,
-    ) -> "TorchEstimator":
-        import torch
-        import torch.nn as nn
-        from torch.utils.data import DataLoader, TensorDataset
-
-        device = self._get_device()
-        X_t = torch.tensor(X, dtype=torch.float32).to(device)
-
-        if self.task_type == "classification":
-            # Map labels to contiguous ints
-            unique_labels = np.unique(y)
-            self.classes_ = unique_labels
-            self._label_to_idx = {lbl: i for i, lbl in enumerate(unique_labels)}
-            self._idx_to_label = {i: lbl for lbl, i in self._label_to_idx.items()}
-            y_int = np.array([self._label_to_idx[v] for v in y])
-            y_t = torch.tensor(y_int, dtype=torch.long).to(device)
-            output_dim = len(unique_labels)
-        else:
-            y_arr = np.asarray(y, dtype=np.float32).ravel()
-            y_t = torch.tensor(y_arr, dtype=torch.float32).unsqueeze(1).to(device)
-            output_dim = 1
-
-        self.net_ = self._build_network(X_t.shape[1], output_dim).to(device)
-
-        if self.task_type == "classification":
-            criterion = nn.CrossEntropyLoss()
-        else:
-            criterion = nn.MSELoss()
-
-        optimizer = torch.optim.Adam(self.net_.parameters(), lr=self.learning_rate)
-
-        # Optional validation tensors for early stopping
-        has_val = X_val is not None and y_val is not None
-        if has_val:
-            X_val_t = torch.tensor(X_val, dtype=torch.float32).to(device)
-            if self.task_type == "classification":
-                y_val_int = np.array([self._label_to_idx[v] for v in y_val])
-                y_val_t = torch.tensor(y_val_int, dtype=torch.long).to(device)
-            else:
-                y_val_arr = np.asarray(y_val, dtype=np.float32).ravel()
-                y_val_t = torch.tensor(y_val_arr, dtype=torch.float32).unsqueeze(1).to(device)
-
-        dataset = TensorDataset(X_t, y_t)
-        loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
-
-        best_val_loss = float("inf")
-        patience_counter = 0
-        best_state = None
-
-        for epoch in range(self.epochs):
-            self.net_.train()
-            epoch_loss = 0.0
-            for X_batch, y_batch in loader:
-                optimizer.zero_grad()
-                out = self.net_(X_batch)
-                loss = criterion(out, y_batch)
-                loss.backward()
-                optimizer.step()
-                epoch_loss += loss.item() * len(X_batch)
-            epoch_loss /= len(dataset)
-
-            # Early stopping
-            if has_val:
-                self.net_.eval()
-                with torch.no_grad():
-                    val_out = self.net_(X_val_t)
-                    val_loss = criterion(val_out, y_val_t).item()
-
-                if val_loss < best_val_loss:
-                    best_val_loss = val_loss
-                    patience_counter = 0
-                    best_state = {k: v.cpu().clone() for k, v in self.net_.state_dict().items()}
-                else:
-                    patience_counter += 1
-                    if patience_counter >= self.early_stopping_patience:
-                        if best_state is not None:
-                            self.net_.load_state_dict(best_state)
-                        if progress_callback:
-                            progress_callback(epoch + 1, self.epochs, epoch_loss)
-                        break
-
-            if progress_callback:
-                progress_callback(epoch + 1, self.epochs, epoch_loss)
-
-        # Restore best weights if we finished all epochs with val data
-        if has_val and best_state is not None and patience_counter < self.early_stopping_patience:
-            self.net_.load_state_dict(best_state)
-
-        self.is_fitted_ = True
-        return self
-
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        import torch
-        device = self._get_device()
-        self.net_.eval()
-        X_t = torch.tensor(X, dtype=torch.float32).to(device)
-        with torch.no_grad():
-            out = self.net_(X_t)
-        if self.task_type == "classification":
-            indices = out.argmax(dim=1).cpu().numpy()
-            return np.array([self._idx_to_label[i] for i in indices])
-        else:
-            return out.cpu().numpy().ravel()
-
-    def predict_proba(self, X: np.ndarray) -> np.ndarray:
-        import torch
-        if self.task_type != "classification":
-            raise ValueError("predict_proba only available for classification")
-        device = self._get_device()
-        self.net_.eval()
-        X_t = torch.tensor(X, dtype=torch.float32).to(device)
-        with torch.no_grad():
-            out = self.net_(X_t)
-            proba = torch.softmax(out, dim=1)
-        return proba.cpu().numpy()
-
-    def score(self, X: np.ndarray, y: np.ndarray) -> float:
-        if self.task_type == "classification":
-            return float(np.mean(self.predict(X) == y))
-        else:
-            from sklearn.metrics import r2_score
-            return float(r2_score(y, self.predict(X)))
-
-    def get_params(self, deep: bool = True) -> dict:
-        return {
-            "task_type": self.task_type,
-            "hidden_layers": self.hidden_layers,
-            "activation": self.activation,
-            "dropout": self.dropout,
-            "learning_rate": self.learning_rate,
-            "batch_size": self.batch_size,
-            "epochs": self.epochs,
-            "early_stopping_patience": self.early_stopping_patience,
-        }
-
-    def set_params(self, **params: Any) -> "TorchEstimator":
-        for key, value in params.items():
-            setattr(self, key, value)
-        return self
 
 
 # ---------------------------------------------------------------------------
@@ -513,16 +266,12 @@ def create_sklearn_model(
                 random_state=42,
                 n_jobs=-1,
                 eval_metric="logloss",
-                use_label_encoder=False,
                 **params,
             )
         else:
             return xgb.XGBRegressor(random_state=42, n_jobs=-1, **params)
 
-    elif model_type == "neural_network":
-        return TorchEstimator(task_type=task_type, **params)
-
-    # ── New classification models ────────────────────────────────────────
+    # ── Classification models ────────────────────────────────────────────
     elif task_type in ("binary_classification", "multiclass_classification") and \
             model_type in CLASSIFICATION_MODEL_TYPES:
         from src.models.classifiers import get_classification_model
@@ -666,7 +415,6 @@ def train_model(
     X_val: np.ndarray | None = None,
     y_val: np.ndarray | None = None,
     cv_folds: int = 5,
-    progress_callback: Callable[[int, int, float], None] | None = None,
 ) -> TrainingResult:
     """Train a single model, evaluate, and run CV (if supervised).
 
@@ -682,13 +430,7 @@ def train_model(
     model = create_sklearn_model(model_type, task_type, params)
 
     # ── Fit ─────────────────────────────────────────────────────────────
-    if model_type == "neural_network" and is_supervised(task_type):
-        model.fit(
-            X_train, y_train,
-            X_val=X_val, y_val=y_val,
-            progress_callback=progress_callback,
-        )
-    elif is_supervised(task_type):
+    if is_supervised(task_type):
         model.fit(X_train, y_train)
     else:
         model.fit(X_train)
@@ -777,10 +519,10 @@ def log_to_mlflow(
             model_family = "anomaly_detection"
         elif result.model_type in REDUCTION_MODEL_TYPES:
             model_family = "dimensionality_reduction"
-        elif result.model_type in {"random_forest", "xgboost", "neural_network",
+        elif result.model_type in {"random_forest", "xgboost",
                                     "logistic_regression", "svm", "svm_linear",
                                     "naive_bayes_gaussian", "naive_bayes_bernoulli",
-                                    "decision_tree", "knn", "mlp"}:
+                                    "decision_tree", "knn"}:
             model_family = "classification"
         else:
             model_family = "regression"
