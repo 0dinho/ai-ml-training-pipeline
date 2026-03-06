@@ -534,69 +534,82 @@ st.header("Train Models")
 
 if st.button("🏋️ Train Models", type="primary"):
     results = []
+    n_models = len(selected_models)
+    overall_progress = st.progress(0, text=f"Training 0/{n_models} models...")
 
-    for model_type in selected_models:
+    for idx, model_type in enumerate(selected_models):
         cfg = model_configs[model_type]
         display_name = MODEL_DISPLAY_NAMES.get(model_type, model_type)
 
-        st.subheader(f"Training {display_name}")
+        overall_progress.progress(
+            idx / n_models,
+            text=f"Training model {idx + 1}/{n_models}: **{display_name}**...",
+        )
 
-        try:
-            # Step 1: Optuna tuning (if enabled — supervised only)
-            if cfg.get("auto_tune") and supervised:
-                st.write("Running Optuna hyperparameter search...")
-                tune_bar = st.progress(0, text="Tuning...")
+        with st.status(f"{display_name}", expanded=True) as status:
+            try:
+                # Step 1: Optuna tuning (if enabled — supervised only)
+                if cfg.get("auto_tune") and supervised:
+                    st.write("Running Optuna hyperparameter search...")
+                    tune_bar = st.progress(0, text="Tuning...")
 
-                def tune_callback(trial_num, total, score):
-                    pct = trial_num / total
-                    tune_bar.progress(pct, text=f"Trial {trial_num}/{total} — best score: {score:.4f}")
+                    def tune_callback(trial_num, total, score):
+                        pct = trial_num / total
+                        tune_bar.progress(pct, text=f"Trial {trial_num}/{total} — best score: {score:.4f}")
 
-                params = run_optuna_tuning(
-                    model_type, task_type,
+                    params = run_optuna_tuning(
+                        model_type, task_type,
+                        X_train, y_train,
+                        cv_folds=cv_folds,
+                        n_trials=cfg["n_trials"],
+                        timeout=cfg["timeout"],
+                        callback=tune_callback,
+                    )
+                    tune_bar.progress(1.0, text="Tuning complete!")
+                    st.write(f"Best params: `{params}`")
+                else:
+                    params = cfg.get("params", get_default_params(model_type, task_type))
+
+                # Step 2: Fit model
+                st.write("Fitting model...")
+                result = train_model(
+                    model_type, task_type, params,
                     X_train, y_train,
+                    X_val if supervised else None,
+                    y_val if supervised else None,
                     cv_folds=cv_folds,
-                    n_trials=cfg["n_trials"],
-                    timeout=cfg["timeout"],
-                    callback=tune_callback,
                 )
-                tune_bar.progress(1.0, text="Tuning complete!")
-                st.write(f"Best params: `{params}`")
-            else:
-                params = cfg.get("params", get_default_params(model_type, task_type))
 
-            # Step 2: Train model
-            train_bar = st.progress(0, text="Training...")
+                # Step 3: Save model artifact
+                st.write("Saving artifact...")
+                artifact_path = save_model(
+                    result, task_type=task_type,
+                    feature_names=feature_names, target_column=target_column,
+                )
+                st.write(f"Model saved to `{artifact_path}`")
 
-            result = train_model(
-                model_type, task_type, params,
-                X_train, y_train,
-                X_val if supervised else None,
-                y_val if supervised else None,
-                cv_folds=cv_folds,
-            )
-            train_bar.progress(1.0, text="Training complete!")
+                # Step 4: MLflow logging (best-effort)
+                run_id = log_to_mlflow(result)
+                if run_id:
+                    result.mlflow_run_id = run_id
+                    st.write(f"MLflow run: `{run_id}`")
 
-            # Step 3: Save model artifact
-            artifact_path = save_model(
-                result, task_type=task_type,
-                feature_names=feature_names, target_column=target_column,
-            )
-            st.write(f"Model saved to `{artifact_path}`")
+                # Step 5: Summary
+                primary = next(iter(result.metrics), None)
+                if primary and isinstance(result.metrics[primary], float):
+                    st.write(f"**{primary}:** {result.metrics[primary]:.4f} — trained in {result.training_time:.1f}s")
+                else:
+                    st.write(f"Trained in {result.training_time:.1f}s")
 
-            # Step 4: MLflow logging (best-effort)
-            run_id = log_to_mlflow(result)
-            if run_id:
-                result.mlflow_run_id = run_id
-                st.write(f"MLflow run: `{run_id}`")
-            else:
-                st.caption("MLflow logging skipped (server unavailable).")
+                results.append(result)
+                status.update(label=f"{display_name} — done", state="complete", expanded=False)
 
-            results.append(result)
-            st.success(f"{display_name} training complete!")
+            except Exception as e:
+                status.update(label=f"{display_name} — failed", state="error", expanded=True)
+                st.error(str(e))
+                continue
 
-        except Exception as e:
-            st.error(f"{display_name} failed: {e}")
-            continue
+    overall_progress.progress(1.0, text=f"All done — {len(results)}/{n_models} models trained successfully.")
 
     # Step 5: Store in session state
     if not results:

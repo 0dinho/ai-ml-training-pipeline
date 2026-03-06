@@ -188,7 +188,8 @@ def _render_shap_tab(r: "TrainingResult", X_data: np.ndarray, feat_names: list[s
 
     n_feat = X_sample.shape[1]
     fn = feat_names if feat_names else [f"feature_{i}" for i in range(n_feat)]
-    fn_arr = np.array(fn[:n_feat] if len(fn) >= n_feat else fn + [f"feature_{i}" for i in range(len(fn), n_feat)])
+    fn_raw = fn[:n_feat] if len(fn) >= n_feat else fn + [f"feature_{i}" for i in range(len(fn), n_feat)]
+    fn_arr = np.array([str(x) for x in fn_raw])
 
     # Mean |SHAP| per feature — bar chart (top 15)
     mean_abs_shap = np.abs(shap_values).mean(axis=0)
