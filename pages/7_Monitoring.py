@@ -8,6 +8,8 @@ Two independent sections:
 """
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -32,9 +34,9 @@ PLOTLY_LAYOUT = dict(
 )
 COLORS = ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7"]
 
-API_URL = "http://localhost:8000"
-PROMETHEUS_URL = "http://localhost:9090"
-GRAFANA_URL = "http://localhost:3000"
+API_URL = os.environ.get("API_URL", "http://localhost:8000")
+PROMETHEUS_URL = os.environ.get("PROMETHEUS_URL", "http://localhost:9090")
+GRAFANA_URL = os.environ.get("GRAFANA_URL", "http://localhost:3000")
 
 # ── Prometheus helpers ─────────────────────────────────────────────────────────
 
